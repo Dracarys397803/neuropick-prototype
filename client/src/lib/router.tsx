@@ -1,8 +1,14 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
+/**
+ * 内存路由 —— 只保留两个视图:
+ * - home:     新版 dashboard 首页(选品 + 权重 + 实时预览)
+ * - result:   生成后的推荐报告页
+ *
+ * 旧的 `configure` 视图已废弃并删除,所有"返回 / 修改条件"操作都回到 home。
+ */
 export type View =
   | { name: "home" }
-  | { name: "configure"; catKey: string }
   | {
       name: "result";
       catKey: string;
