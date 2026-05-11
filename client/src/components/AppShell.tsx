@@ -4,8 +4,10 @@ import { Logo } from "./Logo";
 import { CATEGORIES } from "@/lib/dimensions";
 import { useRouter } from "@/lib/router";
 
+const REPO_URL = "https://github.com/Dracarys397803/neuropick-prototype";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const { go } = useRouter();
 
   useEffect(() => {
@@ -14,50 +16,54 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-30 backdrop-blur-md bg-background/85 border-b">
+        <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 h-14 flex items-center justify-between">
           <button
             type="button"
             onClick={() => go({ name: "home" })}
             className="bg-transparent"
             data-testid="button-logo"
+            aria-label="返回首页"
           >
             <Logo />
           </button>
+
           <nav className="flex items-center gap-1 text-sm">
-            <button
-              type="button"
-              onClick={() => go({ name: "home" })}
-              className="hidden sm:inline-flex px-3 py-1.5 rounded-md hover-elevate text-muted-foreground hover:text-foreground"
-              data-testid="link-nav-home"
-            >
-              首页
-            </button>
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => go({ name: "configure", catKey: cat.key })}
-                className="hidden md:inline-flex px-3 py-1.5 rounded-md hover-elevate text-muted-foreground hover:text-foreground"
-                data-testid={`link-nav-${cat.key}`}
-              >
-                {cat.label.replace("智能", "").replace("无线", "")}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const disabled = cat.status === "coming-soon";
+              const shortLabel = cat.label.replace("智能", "").replace("无线", "");
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => !disabled && go({ name: "configure", catKey: cat.key })}
+                  className={[
+                    "hidden md:inline-flex px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition",
+                    disabled && "opacity-50 cursor-not-allowed hover:text-muted-foreground hover:bg-transparent",
+                  ].filter(Boolean).join(" ")}
+                  data-testid={`link-nav-${cat.key}`}
+                  title={disabled ? "即将支持" : undefined}
+                >
+                  {shortLabel}
+                </button>
+              );
+            })}
+
             <button
               type="button"
               onClick={() => setDark((d) => !d)}
-              className="ml-2 size-9 grid place-items-center rounded-md border hover-elevate"
+              className="ml-2 size-9 grid place-items-center rounded-md border bg-card hover:bg-muted transition"
               aria-label="切换主题"
               data-testid="button-theme-toggle"
             >
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
             <a
-              href="https://github.com"
+              href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="size-9 grid place-items-center rounded-md border hover-elevate"
+              className="size-9 grid place-items-center rounded-md border bg-card hover:bg-muted transition"
               aria-label="GitHub"
               data-testid="link-github"
             >
@@ -66,11 +72,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
+
       <main className="flex-1">{children}</main>
-      <footer className="border-t mt-16">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-muted-foreground">
-          <span className="font-mono tracking-wider">© 2026 NEUROPICK · 原型演示，产品数据仅供参考</span>
-          <span className="font-mono opacity-60">v0.1.0 · prototype</span>
+
+      <footer className="border-t mt-12">
+        <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 py-6 flex items-center justify-between text-xs text-muted-foreground">
+          <span>© 2026 Neuropick · 前端原型，产品数据仅供参考</span>
+          <span className="opacity-70">v0.2.0</span>
         </div>
       </footer>
     </div>

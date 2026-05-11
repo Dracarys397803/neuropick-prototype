@@ -6,13 +6,13 @@
  */
 import {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
-  Camera, Headphones, Music, Network, Smartphone,
+  Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
-  Camera, Headphones, Music, Network, Smartphone,
+  Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
 };
 
 export function getIcon(name: string): LucideIcon {

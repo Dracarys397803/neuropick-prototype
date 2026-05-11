@@ -40,31 +40,27 @@ export default function Configure({ catKey }: { catKey: string }) {
 
   return (
     <AppShell>
-      <section className="relative border-b">
-        <div className="absolute inset-0 bg-grid bg-grid-fade opacity-30 pointer-events-none" />
-        <div className="relative max-w-5xl mx-auto px-6 py-10">
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 py-8">
           <button
             type="button"
             onClick={() => go({ name: "home" })}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
             data-testid="link-back-home"
           >
-            <ArrowLeft className="size-3.5" /> 返回品类
+            <ArrowLeft className="size-3.5" /> 返回首页
           </button>
           <div className="mt-4 flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <div className="font-mono text-xs tracking-[0.2em] text-primary mb-2">
-                // CONFIGURE / {category.label.toUpperCase()}
-              </div>
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">告诉 AI 你的需求画像</h1>
-              <p className="mt-2 text-sm text-muted-foreground">{category.tagline}</p>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">调一下你的需求</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{category.label} · {category.tagline}</p>
             </div>
             <StepIndicator step={step} />
           </div>
         </div>
       </section>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 py-10">
         {step === 1 ? (
           <div className="space-y-8 fade-up">
             <PresetPicker presets={category.presets} activeIndex={presetIdx} onPick={applyPreset} />
@@ -73,7 +69,7 @@ export default function Configure({ catKey }: { catKey: string }) {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="inline-flex items-center gap-2 px-5 h-11 rounded-md bg-primary text-primary-foreground font-medium hover-elevate active-elevate-2 border border-primary-border"
+                className="inline-flex items-center gap-2 px-5 h-11 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition"
                 data-testid="button-step-next"
               >
                 下一步 · 预算

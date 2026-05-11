@@ -34,9 +34,8 @@ export default function Result({ catKey, weights, budget, presetName }: Props) {
 
   return (
     <AppShell>
-      <section className="relative border-b overflow-hidden">
-        <div className="absolute inset-0 bg-grid bg-grid-fade opacity-30 pointer-events-none" />
-        <div className="relative max-w-7xl mx-auto px-6 py-10">
+      <section className="border-b">
+        <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 py-8">
           <button
             type="button"
             onClick={reconfigure}
@@ -47,14 +46,11 @@ export default function Result({ catKey, weights, budget, presetName }: Props) {
           </button>
           <div className="mt-4 flex items-end justify-between flex-wrap gap-4">
             <div>
-              <div className="font-mono text-xs tracking-[0.2em] text-primary mb-2">
-                // REPORT / {category.label.toUpperCase()} {presetName && `· ${presetName}`}
-              </div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-                {loading ? "AI 正在生成推荐…" : `为你找到 ${scored.length} 款合适产品`}
+                {loading ? "正在生成推荐…" : `为你找到 ${scored.length} 款合适产品`}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                预算 ≤ {formatPrice(budget)} · 已按你的权重综合排序
+                {category.label}{presetName ? ` · ${presetName}` : ""} · 预算 ≤ {formatPrice(budget)} · 按你的权重排序
               </p>
             </div>
             <ShareButton />
@@ -62,7 +58,7 @@ export default function Result({ catKey, weights, budget, presetName }: Props) {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 py-10">
         {loading ? (
           <LoadingState />
         ) : scored.length === 0 ? (
@@ -105,8 +101,7 @@ function Report({
       <SummaryCard scored={scored} weights={weights} dimensions={category.dimensions} catKey={catKey} />
 
       <div>
-        <div className="font-mono text-xs tracking-[0.2em] text-primary mb-3">// TOP RECOMMENDATIONS</div>
-        <h2 className="text-xl font-semibold mb-6">三款最匹配你的需求</h2>
+        <h2 className="text-xl font-semibold mb-5">最匹配的三款</h2>
         <div className="grid lg:grid-cols-3 gap-5">
           {top3.map((s, idx) => (
             <ProductCard
@@ -133,8 +128,7 @@ function Report({
 
       {rest.length > 0 && (
         <div>
-          <div className="font-mono text-xs tracking-[0.2em] text-primary mb-3">// OTHER CANDIDATES</div>
-          <h2 className="text-xl font-semibold mb-6">其他候选 ({rest.length})</h2>
+          <h2 className="text-xl font-semibold mb-5">其他候选 ({rest.length})</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {rest.map((s, idx) => (
               <ProductCard
@@ -157,7 +151,7 @@ function Report({
         <button
           type="button"
           onClick={onReconfigure}
-          className="mt-3 inline-flex items-center gap-2 px-5 h-11 rounded-md border bg-card hover-elevate font-medium"
+          className="mt-3 inline-flex items-center gap-2 px-5 h-11 rounded-lg border bg-card hover:bg-muted transition font-medium"
           data-testid="link-reconfigure"
         >
           <RotateCcw className="size-4" /> 调整需求重新生成

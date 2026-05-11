@@ -24,6 +24,8 @@ export type Dimension = {
 
 export type CategoryKey = "laptop" | "phone" | "headphone";
 
+export type CategoryStatus = "available" | "coming-soon";
+
 export type CategoryMeta = {
   key: CategoryKey;
   /** 品类显示名 */
@@ -32,6 +34,8 @@ export type CategoryMeta = {
   tagline: string;
   /** Home 页用的导航图标 */
   navIcon: string;
+  /** 是否已开放配置流程 */
+  status: CategoryStatus;
   /** 该品类下的所有评分维度 */
   dimensions: Dimension[];
   /** 预设画像，用户一键应用 */
@@ -73,8 +77,9 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     key: "laptop",
     label: "笔记本电脑",
-    tagline: "办公、创作、游戏，找到你的最佳拍档",
-    navIcon: "Cpu",
+    tagline: "办公、创作、游戏，按你的预算和用途挑一台合适的。",
+    navIcon: "Laptop",
+    status: "available",
     dimensions: [D.performance, D.battery, D.portability, D.display, D.build, D.value],
     presets: [
       { name: "性能优先", weights: { performance: 5, battery: 2, portability: 1, display: 3, build: 2, value: 3 } },
@@ -87,8 +92,9 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     key: "phone",
     label: "智能手机",
-    tagline: "影像、性能、续航、手感，按你的取舍排序",
+    tagline: "影像、性能、续航、手感，按你的取舍排序。",
     navIcon: "Smartphone",
+    status: "coming-soon",
     dimensions: [D.performance, D.camera, D.battery, D.display, D.handfeel, D.value],
     presets: [
       { name: "性能游戏", weights: { performance: 5, camera: 2, battery: 4, display: 4, handfeel: 3, value: 3 } },
@@ -101,8 +107,9 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     key: "headphone",
     label: "无线耳机",
-    tagline: "降噪、音质、佩戴、生态，按场景挑选",
+    tagline: "降噪、音质、佩戴、生态，按使用场景挑选。",
     navIcon: "Headphones",
+    status: "coming-soon",
     dimensions: [D.anc, D.sound, D.comfort, D.battery, D.ecosystem, D.value],
     presets: [
       { name: "通勤降噪", weights: { anc: 5, sound: 3, comfort: 4, battery: 3, ecosystem: 2, value: 3 } },
