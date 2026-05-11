@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { ArrowRight, AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
 import { SideNav } from "@/components/dashboard/SideNav";
 import { TopBar } from "@/components/dashboard/TopBar";
 import { StepHeader } from "@/components/dashboard/StepHeader";
@@ -14,20 +14,23 @@ import { LAPTOP_USE_CASES } from "@/data/useCases";
 import { useRouter } from "@/lib/router";
 import { useToast } from "@/hooks/use-toast";
 
-/** 笔记本默认的 0..100 权重——大致按截图比例。 */
+/**
+ * 笔记本默认 0..100 权重 —— 严格等于 100。
+ * (performance 30 + battery 20 + display 20 + portability 15 + value 15 = 100)
+ */
 const DEFAULT_LAPTOP_WEIGHTS: Record<string, number> = {
   performance: 30,
   battery:     20,
-  display:     15,
-  portability: 10,
-  value:        7,
+  display:     20,
+  portability: 15,
+  value:       15,
 };
 
 export default function Home() {
   const { go } = useRouter();
   const { toast } = useToast();
 
-  // 当前只对 laptop 真正提供配置；其他品类点击时会被 ProductTypeGrid 拦下来 toast。
+  // 当前只对 laptop 真正提供配置;其他品类点击会被 ProductTypeGrid 拦下来 toast。
   const [catKey, setCatKey] = useState<string>("laptop");
   const category = getCategory(catKey);
 
@@ -42,31 +45,52 @@ export default function Home() {
   );
 
   const total = useWeightTotal(category.dimensions, weights, enabled);
+  /** 严格 100 分约束:total 必须正好等于 100 才允许提交。 */
+  const isValid = total === 100;
+  const remaining = 100 - total;
 
   const disabledDims = useMemo(
     () => category.dimensions.filter((d) => enabled[d.key] === false).map((d) => d.key),
     [category, enabled]
   );
 
-  function toggleUseCase(id: string) {
+  const toggleUseCase = useCallback((id: string) => {
     setUseCases((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
+
+  const handleWeightChange = useCallback((k: string, v: number) => {
+    setWeights((p) => ({ ...p, [k]: v }));
+  }, []);
+
+  const handleToggle = useCallback((k: string, on: boolean) => {
+    setEnabled((p) => ({ ...p, [k]: on }));
+  }, []);
+
+  const handleReset = useCallback((next: Record<string, number>) => {
+    setWeights(next);
+  }, []);
+
+  const resetToDefault = useCallback(() => {
+    setWeights({ ...DEFAULT_LAPTOP_WEIGHTS });
+    setEnabled(Object.fromEntries(category.dimensions.map((d) => [d.key, true])));
+  }, [category]);
 
   function generate() {
-    if (total <= 0) {
+    if (!isValid) {
       toast({
-        title: "请先分配权重",
-        description: "至少给一个维度一些权重，或者打开一个维度开关。",
+        title: total > 100 ? "权重超出 100 分" : "权重不足 100 分",
+        description: `当前已分配 ${total} 分,请调到正好 100 分再生成。`,
       });
       return;
     }
+    // 把所有启用维度的权重透传到 result;关闭维度通过 disabledDims 告知。
     const dimWeights = category.dimensions.reduce<Record<DimensionKey, number>>((acc, d) => {
-      acc[d.key] = weights[d.key] ?? 0;
+      acc[d.key] = enabled[d.key] === false ? 0 : (weights[d.key] ?? 0);
       return acc;
     }, {} as Record<DimensionKey, number>);
 
@@ -79,15 +103,20 @@ export default function Home() {
     });
   }
 
+  /** 左侧栏 / 顶部栏点击「首页」时停留在当前页(已经是首页)。 */
+  const stayHome = useCallback(() => {
+    go({ name: "home" });
+  }, [go]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar activeId="advisor" />
 
       <div className="flex flex-1">
-        <SideNav activeId="home" onSelect={() => { /* home: stay */ }} />
+        <SideNav activeId="home" onSelect={stayHome} />
 
         <main className="flex-1 min-w-0 px-4 md:px-6 py-6 bg-muted/30">
-          <div className="mx-auto max-w-[1320px] grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
+          <div className="mx-auto max-w-[1320px] grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
             {/* ============ 主配置卡片 ============ */}
             <section className="rounded-2xl bg-card border shadow-sm p-5 md:p-7">
               <header className="mb-5">
@@ -95,7 +124,7 @@ export default function Home() {
                   帮你挑真正适合的<span className="text-primary">数码产品</span>
                 </h1>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  根据你的需求和偏好，智能匹配最适合的产品。
+                  根据你的需求和偏好,智能匹配最适合的产品。
                 </p>
               </header>
 
@@ -121,7 +150,7 @@ export default function Home() {
                 <StepHeader
                   index={3}
                   title="主要用途"
-                  hint={<span>（可多选）</span>}
+                  hint={<span>(可多选)</span>}
                 />
                 <UseCaseChips
                   options={LAPTOP_USE_CASES}
@@ -135,25 +164,30 @@ export default function Home() {
                 <StepHeader
                   index={4}
                   title="你的优先级权重"
-                  hint={<span>分配 100 分，可开关维度，可自定义</span>}
+                  hint={<span>必须严格分配 100 分</span>}
                   trailing={
-                    <span className="text-xs text-muted-foreground">
-                      已分配 <span className="font-mono text-foreground font-semibold">{total}</span> / 100
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={resetToDefault}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition"
+                        data-testid="button-reset-weights"
+                        title="恢复默认权重"
+                      >
+                        <RotateCcw className="size-3" /> 重置
+                      </button>
+                      <WeightBadge total={total} />
+                    </div>
                   }
                 />
-                <div className="relative h-1.5 rounded-full bg-muted overflow-hidden" aria-hidden>
-                  <div
-                    className="absolute inset-y-0 left-0 bg-primary transition-[width]"
-                    style={{ width: `${Math.min(100, total)}%` }}
-                  />
-                </div>
+                <WeightProgressBar total={total} />
                 <WeightAllocator
                   dimensions={category.dimensions}
                   weights={weights}
                   enabled={enabled}
-                  onWeightChange={(k, v) => setWeights((p) => ({ ...p, [k]: v }))}
-                  onToggle={(k, on) => setEnabled((p) => ({ ...p, [k]: on }))}
+                  onWeightChange={handleWeightChange}
+                  onToggle={handleToggle}
+                  onReset={handleReset}
                 />
               </div>
 
@@ -161,14 +195,30 @@ export default function Home() {
               <button
                 type="button"
                 onClick={generate}
-                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition inline-flex items-center justify-center gap-2"
+                disabled={!isValid}
+                className={[
+                  "w-full h-12 rounded-lg font-medium transition inline-flex items-center justify-center gap-2",
+                  isValid
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted text-muted-foreground cursor-not-allowed",
+                ].join(" ")}
                 data-testid="button-generate"
               >
                 生成我的推荐
                 <ArrowRight className="size-4" />
               </button>
-              <p className="text-center mt-2 text-[11px] text-muted-foreground">
-                预计 1–2 秒完成分析
+              <p
+                className={[
+                  "text-center mt-2 text-[11px]",
+                  isValid ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400",
+                ].join(" ")}
+                data-testid="generate-hint"
+              >
+                {isValid
+                  ? "预计 1–2 秒完成分析"
+                  : remaining > 0
+                    ? `还需要分配 ${remaining} 分才能生成`
+                    : `已超出 ${-remaining} 分,请调低后再生成`}
               </p>
             </section>
 
@@ -185,6 +235,60 @@ export default function Home() {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+/** 已分配 X / 100 徽章 —— 三态:不足 / 正好 / 超出。 */
+function WeightBadge({ total }: { total: number }) {
+  const state =
+    total === 100 ? "ok" : total > 100 ? "over" : "under";
+  const cls =
+    state === "ok"
+      ? "text-emerald-600 dark:text-emerald-400 border-emerald-300/40 bg-emerald-500/10"
+      : state === "over"
+        ? "text-red-600 dark:text-red-400 border-red-300/40 bg-red-500/10"
+        : "text-amber-600 dark:text-amber-400 border-amber-300/40 bg-amber-500/10";
+  const Icon = state === "ok" ? CheckCircle2 : AlertCircle;
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+        cls,
+      ].join(" ")}
+      data-testid="weight-badge"
+      data-state={state}
+    >
+      <Icon className="size-3" />
+      <span className="font-mono">{total}</span>
+      <span className="opacity-60">/ 100</span>
+    </span>
+  );
+}
+
+/** 进度条 —— 0..100 显示绿色,>100 部分用红色提示。 */
+function WeightProgressBar({ total }: { total: number }) {
+  const filled = Math.min(100, total);
+  const over = Math.max(0, total - 100);
+  return (
+    <div
+      className="relative h-1.5 rounded-full bg-muted overflow-hidden"
+      aria-hidden
+      data-testid="weight-progress"
+    >
+      <div
+        className={[
+          "absolute inset-y-0 left-0 transition-[width]",
+          total === 100 ? "bg-emerald-500" : "bg-primary",
+        ].join(" ")}
+        style={{ width: `${filled}%` }}
+      />
+      {over > 0 && (
+        <div
+          className="absolute inset-y-0 right-0 bg-red-500 transition-[width]"
+          style={{ width: `${Math.min(100, over)}%` }}
+        />
+      )}
     </div>
   );
 }
