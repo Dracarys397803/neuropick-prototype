@@ -1,0 +1,268 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== TECH AESTHETIC: deep space + cyan/electric accent ===== */
+:root {
+  --button-outline: rgba(0, 0, 0, 0.1);
+  --badge-outline: rgba(0, 0, 0, 0.05);
+  --opaque-button-border-intensity: -8;
+  --elevate-1: rgba(0, 0, 0, 0.04);
+  --elevate-2: rgba(0, 0, 0, 0.08);
+  --background: 220 20% 98%;
+  --foreground: 220 30% 8%;
+  --border: 220 14% 90%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 8%;
+  --card-border: 220 14% 92%;
+  --sidebar: 220 20% 96%;
+  --sidebar-foreground: 220 30% 8%;
+  --sidebar-border: 220 14% 90%;
+  --sidebar-primary: 186 100% 42%;
+  --sidebar-primary-foreground: 220 30% 8%;
+  --sidebar-accent: 220 14% 90%;
+  --sidebar-accent-foreground: 220 30% 8%;
+  --sidebar-ring: 186 100% 42%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 8%;
+  --popover-border: 220 14% 90%;
+  --primary: 186 100% 38%;
+  --primary-foreground: 220 30% 8%;
+  --secondary: 220 14% 94%;
+  --secondary-foreground: 220 30% 8%;
+  --muted: 220 14% 94%;
+  --muted-foreground: 220 9% 46%;
+  --accent: 270 80% 60%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 220 14% 85%;
+  --ring: 186 100% 42%;
+  --chart-1: 186 100% 42%;
+  --chart-2: 270 80% 60%;
+  --chart-3: 142 70% 45%;
+  --chart-4: 43 96% 56%;
+  --chart-5: 340 82% 60%;
+  --font-sans: 'Geist', 'DM Sans', system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+  --radius: 0.625rem;
+  --shadow-2xs: 0px 1px 2px 0px hsl(220 30% 8% / 0.04);
+  --shadow-xs: 0px 1px 2px 0px hsl(220 30% 8% / 0.05);
+  --shadow-sm: 0px 1px 3px 0px hsl(220 30% 8% / 0.06), 0px 1px 2px -1px hsl(220 30% 8% / 0.06);
+  --shadow: 0px 2px 8px -2px hsl(220 30% 8% / 0.08), 0px 1px 3px -1px hsl(220 30% 8% / 0.06);
+  --shadow-md: 0px 4px 12px -2px hsl(220 30% 8% / 0.1);
+  --shadow-lg: 0px 8px 24px -4px hsl(220 30% 8% / 0.12);
+  --shadow-xl: 0px 16px 40px -8px hsl(220 30% 8% / 0.14);
+  --shadow-2xl: 0px 24px 56px -12px hsl(220 30% 8% / 0.18);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --button-outline: rgba(255, 255, 255, 0.08);
+  --badge-outline: rgba(255, 255, 255, 0.05);
+  --opaque-button-border-intensity: 9;
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.08);
+  --background: 220 30% 5%;
+  --foreground: 210 20% 96%;
+  --border: 220 20% 14%;
+  --card: 220 28% 8%;
+  --card-foreground: 210 20% 96%;
+  --card-border: 220 20% 14%;
+  --sidebar: 220 30% 6%;
+  --sidebar-foreground: 210 20% 96%;
+  --sidebar-border: 220 20% 14%;
+  --sidebar-primary: 186 100% 50%;
+  --sidebar-primary-foreground: 220 30% 5%;
+  --sidebar-accent: 220 20% 14%;
+  --sidebar-accent-foreground: 210 20% 96%;
+  --sidebar-ring: 186 100% 50%;
+  --popover: 220 28% 9%;
+  --popover-foreground: 210 20% 96%;
+  --popover-border: 220 20% 16%;
+  --primary: 186 100% 50%;
+  --primary-foreground: 220 30% 5%;
+  --secondary: 220 20% 14%;
+  --secondary-foreground: 210 20% 96%;
+  --muted: 220 20% 12%;
+  --muted-foreground: 220 10% 65%;
+  --accent: 270 85% 65%;
+  --accent-foreground: 220 30% 5%;
+  --destructive: 0 75% 55%;
+  --destructive-foreground: 210 20% 96%;
+  --input: 220 20% 18%;
+  --ring: 186 100% 50%;
+  --chart-1: 186 100% 50%;
+  --chart-2: 270 85% 65%;
+  --chart-3: 142 70% 55%;
+  --chart-4: 43 96% 60%;
+  --chart-5: 340 82% 65%;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.3);
+  --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.4);
+  --shadow-sm: 0px 1px 3px 0px hsl(0 0% 0% / 0.4);
+  --shadow: 0px 2px 8px -2px hsl(0 0% 0% / 0.5);
+  --shadow-md: 0px 4px 12px -2px hsl(0 0% 0% / 0.5);
+  --shadow-lg: 0px 8px 24px -4px hsl(0 0% 0% / 0.6);
+  --shadow-xl: 0px 16px 40px -8px hsl(0 0% 0% / 0.7);
+  --shadow-2xl: 0px 24px 56px -12px hsl(0 0% 0% / 0.8);
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+  }
+  .font-mono { font-family: var(--font-mono); }
+}
+
+/* ===== Tech-grid background ===== */
+.bg-grid {
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: center;
+}
+.bg-grid-fade {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, #000 30%, transparent 80%);
+}
+
+/* Glow halo */
+.glow-cyan {
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3), 0 0 40px -4px hsl(var(--primary) / 0.35);
+}
+.glow-text {
+  text-shadow: 0 0 24px hsl(var(--primary) / 0.5);
+}
+
+/* Conic gradient ring */
+.ring-conic::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from 180deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Scanline accent */
+.scanline {
+  background: linear-gradient(180deg, transparent 0%, hsl(var(--primary) / 0.04) 50%, transparent 100%);
+  background-size: 100% 8px;
+}
+
+/* Pulse dot */
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+/* Fade-in-up */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+
+/* Shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.15), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+@layer utilities {
+  input[type='search']::-webkit-search-cancel-button { @apply hidden; }
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+  .no-default-hover-elevate {}
+  .no-default-active-elevate {}
+
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
+  }
+  .toggle-elevate.toggle-elevated::before { background-color: var(--elevate-2); }
+  .border.toggle-elevate::before { inset: -1px; }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after { background-color: var(--elevate-1); }
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after { background-color: var(--elevate-2); }
+
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after { inset: -1px; }
+}
