@@ -9,17 +9,20 @@ Neuropick 是一个面向普通消费者的 AI 3C 硬件选购助手。当前版
 ## Current Status
 
 - **当前阶段**:前端原型 / Prototype
-- **当前重点品类**:笔记本电脑（已开放配置 + 推荐流程）
+- **产品定位**:任务型选购助手(左侧边栏 + 中间分步配置卡 + 右侧推荐预览/社区)。当前只带出「选购助手 + 笔记本」主流程,其余导航路径统一「敬请期待」。
+- **当前重点品类**:笔记本电脑(唯一可选)
 - **当前能力**:
-  - 首页 Quick Start Card:产品类型、预算、主要用途
-  - Configure 页:预设画像、6 维度权重调节、预算 slider
-  - Result 页:Top 3 推荐、其他候选、对比表、维度雷达
+  - 首页 4 步配置:产品类型 / 预算范围 / 主要用途 / 优先级权重(带开关,关掉不计入打分)
+  - 右侧 Top 3 推荐预览 · 实时随配置变化
+  - 右侧社区动态 mock
+  - 默认浅色主题、可切换深色
+  - 笔记本 Result 页:Top 3 推荐、其他候选、对比表、维度雷达(从上一版留下)
 - **尚未完成**:
   - 真实产品数据库(目前为 mock)
   - 真实 AI 推荐接口
-  - 价格实时更新
-  - 购买链接抓取
-  - 手机 / 耳机 / 平板 / 显示器 等品类完整支持
+  - 价格实时更新 / 购买链接抓取
+  - 手机 / 耳机 / 平板 / 手表 / 游戏主机 等品类流程
+  - 对比 / 收藏 / 评测库 / 排行榜 / 社区 / 个人中心
 
 ## Tech Stack
 
@@ -86,27 +89,37 @@ npm run start      # 以生产模式启动 Express,serve dist/public
 techpick/
 ├── client/
 │   └── src/
-│       ├── pages/               # Home / Configure / Result(只做编排)
+│       ├── pages/                 # Home (dashboard) / Configure (legacy) / Result
 │       ├── components/
-│       │   ├── home/            # QuickStartCard / CategoryListItem / ScoringExplain
-│       │   ├── configure/       # PresetPicker / DimensionSliders / BudgetSlider / Summary
-│       │   ├── result/          # ProductCard / CompareTable / SummaryCard / ScoreRing 等
-│       │   ├── AppShell.tsx
-│       │   ├── CategoryCard.tsx (legacy,首页已不使用,保留以备其他流程复用)
-│       │   └── ui/              # shadcn/radix 原子组件
-│       ├── data/                # 仅 UI 用的静态数据:用途 chips、维度文案解释
+│       │   ├── dashboard/         # 新首页专用:
+│       │   │                       #   TopBar / SideNav / StepHeader
+│       │   │                       #   ProductTypeGrid / BudgetRange / UseCaseChips
+│       │   │                       #   WeightAllocator / RecommendationPreview / CommunityCard
+│       │   ├── home/              # 上一版 hero 余留组件(未使用)
+│       │   ├── configure/         # PresetPicker / DimensionSliders / BudgetSlider / Summary
+│       │   ├── result/            # ProductCard / CompareTable / SummaryCard / ScoreRing 等
+│       │   ├── AppShell.tsx       # legacy 外壳(仅 Configure/Result 用)
+│       │   ├── CategoryCard.tsx   # legacy(未使用)
+│       │   └── ui/                # shadcn/radix 原子组件
+│       ├── data/                  # 只服务 UI 的静态数据
+│       │   ├── navigation.ts      # 左侧栏 + 顶部导航项
+│       │   ├── productTypes.ts    # 6 个产品类型 chip
+│       │   ├── useCases.ts        # 主要用途 chips
+│       │   ├── communityFeed.ts   # mock 社区动态
+│       │   └── scoringExplain.ts  # 维度说明文案
 │       ├── lib/
-│       │   ├── dimensions.ts    # 维度 / 品类 / 预设 / 预算 单一事实来源
-│       │   ├── mockProducts.ts  # mock 产品库(纯数据)
-│       │   ├── scoring.ts       # 评分纯函数
-│       │   ├── icons.ts         # 图标名 → lucide 组件映射
-│       │   └── router.tsx       # 极简 view 切换路由
+│       │   ├── dimensions.ts      # 维度 / 品类 / 预设 / 预算 单一事实来源
+│       │   ├── mockProducts.ts    # mock 产品库(纯数据)
+│       │   ├── scoring.ts         # 评分纯函数(支持维度禁用)
+│       │   ├── icons.ts           # 图标名 → lucide 组件映射
+│       │   └── router.tsx         # 极简 view 切换路由
+│       ├── hooks/use-toast.ts     # “敬请期待” toast
 │       ├── App.tsx
 │       ├── main.tsx
 │       └── index.css
-├── server/                       # Express + Vite dev middleware
-├── shared/                       # 跨端共享 schema
-├── script/build.ts               # 同时打包 client(Vite)与 server(esbuild)
+├── server/                         # Express + Vite dev middleware
+├── shared/                         # 跨端共享 schema
+├── script/build.ts                 # 同时打包 client 与 server
 ├── README.md
 ├── CHANGELOG.md
 └── package.json
@@ -149,12 +162,13 @@ PORT=8080 npm run start
 
 ## Roadmap
 
-- **Phase 1** ✅ 消费级前端原型(本仓库当前状态)
-- **Phase 2** mock 产品数据库扩充 + 真实产品参数补齐
-- **Phase 3** 评分逻辑完善:可靠性维度真正参与打分、动态权重归一化
+- **Phase 1** ✅ 消费级前端原型
+- **Phase 2** ✅ Dashboard 任务型选购助手骨架(当前仓库状态)
+- **Phase 3** 笔记本深化:mock 产品库扩充、评测内容结构、对比页面
 - **Phase 4** AI 推荐解释(LLM 生成「为什么推这台」)
 - **Phase 5** 商品链接、价格更新、库存校验
-- **Phase 6** 扩展手机 / 耳机 / 平板 / 显示器等品类
+- **Phase 6** 对比 / 收藏 / 评测库 等「敬请期待」模块逐一开启
+- **Phase 7** 扩展手机 / 耳机 / 平板 / 手表 / 游戏主机等品类
 
 ## Contributing
 

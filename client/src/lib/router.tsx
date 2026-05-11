@@ -3,7 +3,15 @@ import { createContext, useContext, useState, useCallback, ReactNode } from "rea
 export type View =
   | { name: "home" }
   | { name: "configure"; catKey: string }
-  | { name: "result"; catKey: string; weights: Record<string, number>; budget: number; presetName?: string };
+  | {
+      name: "result";
+      catKey: string;
+      weights: Record<string, number>;
+      budget: number;
+      presetName?: string;
+      /** 被用户关闭的维度 key。不传 = 全部启用。 */
+      disabledDims?: string[];
+    };
 
 type Ctx = {
   view: View;

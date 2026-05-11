@@ -16,19 +16,24 @@ type Props = {
   weights: Record<string, number>;
   budget: number;
   presetName?: string;
+  disabledDims?: string[];
 };
 
 const LOADING_MS = 1100;
 
-export default function Result({ catKey, weights, budget, presetName }: Props) {
+export default function Result({ catKey, weights, budget, presetName, disabledDims }: Props) {
   const { go } = useRouter();
   const category = getCategory(catKey);
 
-  const scored = useMemo(
-    () => scoreProducts(category, weights, budget),
-    [category, weights, budget]
+  const disabledSet = useMemo(
+    () => new Set(disabledDims ?? []),
+    [disabledDims]
   );
-  const loading = useFakeLoading(LOADING_MS, [catKey, weights, budget]);
+  const scored = useMemo(
+    () => scoreProducts(category, weights, budget, disabledSet),
+    [category, weights, budget, disabledSet]
+  );
+  const loading = useFakeLoading(LOADING_MS, [catKey, weights, budget, disabledSet]);
 
   const reconfigure = () => go({ name: "configure", catKey });
 

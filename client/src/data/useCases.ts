@@ -10,8 +10,11 @@ export type UseCase = {
 export const LAPTOP_USE_CASES: UseCase[] = [
   { id: "office",    label: "办公" },
   { id: "study",     label: "学习" },
-  { id: "coding",    label: "编程" },
+  { id: "coding",    label: "编程开发" },
   { id: "gaming",    label: "游戏" },
-  { id: "video",     label: "视频剪辑" },
-  { id: "travel",    label: "轻薄出差" },
+  { id: "creative",  label: "创意设计" },
+  { id: "video",     label: "影音娱乐" },
+  { id: "travel",    label: "出行便携" },
+  { id: "daily",     label: "日常使用" },
+  { id: "other",     label: "其他" },
 ];

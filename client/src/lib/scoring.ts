@@ -31,27 +31,36 @@ const BUDGET_BONUS_MAX = 5;
 export function scoreProducts(
   category: CategoryMeta,
   weights: Weights,
-  budget: number
+  budget: number,
+  /** 被用户关闭的维度 key 集合（不计入打分） */
+  disabledDims?: ReadonlySet<string>
 ): Scored[] {
+  const effectiveDims = category.dimensions.filter(
+    (d) => !disabledDims || !disabledDims.has(d.key)
+  );
   const candidates = getProducts(category.key).filter(
     (p) => p.price <= budget * BUDGET_TOLERANCE
   );
-  const totalWeight = sumWeights(weights);
+  const effectiveWeights = effectiveDims.reduce<Weights>((acc, d) => {
+    acc[d.key] = weights[d.key] ?? 0;
+    return acc;
+  }, {} as Weights);
+  const totalWeight = sumWeights(effectiveWeights);
 
   return candidates
-    .map((product) => scoreOne(product, category, weights, budget, totalWeight))
+    .map((product) => scoreOne(product, effectiveDims, effectiveWeights, budget, totalWeight))
     .sort((a, b) => b.totalScore - a.totalScore);
 }
 
 function scoreOne(
   product: Product,
-  category: CategoryMeta,
+  dimensions: CategoryMeta["dimensions"],
   weights: Weights,
   budget: number,
   totalWeight: number
 ): Scored {
   let weighted = 0;
-  const dimensionContrib = category.dimensions.map<DimensionContribution>((d) => {
+  const dimensionContrib = dimensions.map<DimensionContribution>((d) => {
     const weight = weights[d.key] ?? 0;
     const raw = product.scores[d.key] ?? 0;
     const contrib = (raw * weight) / totalWeight;

@@ -11,7 +11,7 @@ function ViewSwitch() {
   const { view } = useRouter();
   if (view.name === "home") return <Home />;
   if (view.name === "configure") return <Configure catKey={view.catKey} />;
-  if (view.name === "result") return <Result catKey={view.catKey} weights={view.weights} budget={view.budget} presetName={view.presetName} />;
+  if (view.name === "result") return <Result catKey={view.catKey} weights={view.weights} budget={view.budget} presetName={view.presetName} disabledDims={view.disabledDims} />;
   return <Home />;
 }
 

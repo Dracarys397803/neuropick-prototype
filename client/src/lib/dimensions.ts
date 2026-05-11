@@ -80,10 +80,10 @@ export const CATEGORIES: CategoryMeta[] = [
     tagline: "办公、创作、游戏，按你的预算和用途挑一台合适的。",
     navIcon: "Laptop",
     status: "available",
-    dimensions: [D.performance, D.battery, D.portability, D.display, D.build, D.value],
+    dimensions: [D.performance, D.battery, D.display, D.portability, D.value],
     presets: [
-      { name: "性能优先", weights: { performance: 5, battery: 2, portability: 1, display: 3, build: 2, value: 3 } },
-      { name: "便携优先", weights: { performance: 2, battery: 4, portability: 5, display: 3, build: 3, value: 3 } },
+      { name: "性能优先", weights: { performance: 5, battery: 2, portability: 1, display: 3, value: 3 } },
+      { name: "便携优先", weights: { performance: 2, battery: 4, portability: 5, display: 3, value: 3 } },
       { name: "创作设计", weights: { performance: 4, battery: 3, portability: 2, display: 5, build: 4, value: 2 } },
       { name: "性价比党", weights: { performance: 3, battery: 3, portability: 3, display: 3, build: 2, value: 5 } },
     ],

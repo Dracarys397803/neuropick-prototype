@@ -1,85 +1,190 @@
-import { AppShell } from "@/components/AppShell";
-import { CategoryListItem } from "@/components/home/CategoryListItem";
-import { QuickStartCard } from "@/components/home/QuickStartCard";
-import { ScoringExplain } from "@/components/home/ScoringExplain";
-import { CATEGORIES } from "@/lib/dimensions";
+import { useMemo, useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { SideNav } from "@/components/dashboard/SideNav";
+import { TopBar } from "@/components/dashboard/TopBar";
+import { StepHeader } from "@/components/dashboard/StepHeader";
+import { ProductTypeGrid } from "@/components/dashboard/ProductTypeGrid";
+import { BudgetRange } from "@/components/dashboard/BudgetRange";
+import { UseCaseChips } from "@/components/dashboard/UseCaseChips";
+import { WeightAllocator, useWeightTotal } from "@/components/dashboard/WeightAllocator";
+import { RecommendationPreview } from "@/components/dashboard/RecommendationPreview";
+import { CommunityCard } from "@/components/dashboard/CommunityCard";
+import { getCategory, type DimensionKey } from "@/lib/dimensions";
+import { LAPTOP_USE_CASES } from "@/data/useCases";
 import { useRouter } from "@/lib/router";
+import { useToast } from "@/hooks/use-toast";
 
-/**
- * 首页 —— 消费级选购助手布局：
- * - Hero 左边：标题 + 副标题 + CTA
- * - Hero 右边：QuickStartCard（产品类型 / 预算 / 用途）
- * - 下面：品类列表（小卡，状态显式）
- * - 再下面：推荐逻辑说明（6 个维度）
- */
+/** 笔记本默认的 0..100 权重——大致按截图比例。 */
+const DEFAULT_LAPTOP_WEIGHTS: Record<string, number> = {
+  performance: 30,
+  battery:     20,
+  display:     15,
+  portability: 10,
+  value:        7,
+};
+
 export default function Home() {
   const { go } = useRouter();
-  const goConfigure = (key: string) => go({ name: "configure", catKey: key });
-  const scrollToScoring = () =>
-    document.getElementById("scoring")?.scrollIntoView({ behavior: "smooth" });
+  const { toast } = useToast();
+
+  // 当前只对 laptop 真正提供配置；其他品类点击时会被 ProductTypeGrid 拦下来 toast。
+  const [catKey, setCatKey] = useState<string>("laptop");
+  const category = getCategory(catKey);
+
+  const [budget, setBudget] = useState<number>(category.budget.defaultMax);
+  const [useCases, setUseCases] = useState<Set<string>>(new Set(["office"]));
+
+  const [weights, setWeights] = useState<Record<string, number>>(
+    () => ({ ...DEFAULT_LAPTOP_WEIGHTS })
+  );
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(category.dimensions.map((d) => [d.key, true]))
+  );
+
+  const total = useWeightTotal(category.dimensions, weights, enabled);
+
+  const disabledDims = useMemo(
+    () => category.dimensions.filter((d) => enabled[d.key] === false).map((d) => d.key),
+    [category, enabled]
+  );
+
+  function toggleUseCase(id: string) {
+    setUseCases((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function generate() {
+    if (total <= 0) {
+      toast({
+        title: "请先分配权重",
+        description: "至少给一个维度一些权重，或者打开一个维度开关。",
+      });
+      return;
+    }
+    const dimWeights = category.dimensions.reduce<Record<DimensionKey, number>>((acc, d) => {
+      acc[d.key] = weights[d.key] ?? 0;
+      return acc;
+    }, {} as Record<DimensionKey, number>);
+
+    go({
+      name: "result",
+      catKey,
+      weights: dimWeights,
+      budget,
+      disabledDims,
+    });
+  }
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-[1120px] px-5 md:px-8 pt-10 md:pt-14 pb-16">
-        {/* ============ HERO ============ */}
-        <section className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div>
-            <h1 className="text-3xl md:text-[2.5rem] font-semibold tracking-tight leading-[1.15]">
-              帮你挑一台真正适合的笔记本
-            </h1>
-            <p className="mt-4 text-base text-muted-foreground leading-relaxed">
-              输入预算、用途和偏好，系统会按性能、续航、屏幕、便携性、价格等维度给出可解释推荐。
-            </p>
+    <div className="min-h-screen flex flex-col">
+      <TopBar activeId="advisor" />
 
-            <div className="mt-7 flex flex-wrap items-center gap-3">
+      <div className="flex flex-1">
+        <SideNav activeId="home" onSelect={() => { /* home: stay */ }} />
+
+        <main className="flex-1 min-w-0 px-4 md:px-6 py-6 bg-muted/30">
+          <div className="mx-auto max-w-[1320px] grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
+            {/* ============ 主配置卡片 ============ */}
+            <section className="rounded-2xl bg-card border shadow-sm p-5 md:p-7">
+              <header className="mb-5">
+                <h1 className="text-2xl md:text-[28px] font-semibold tracking-tight leading-tight">
+                  帮你挑真正适合的<span className="text-primary">数码产品</span>
+                </h1>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                  根据你的需求和偏好，智能匹配最适合的产品。
+                </p>
+              </header>
+
+              {/* Step 1 · 产品类型 */}
+              <div className="space-y-3 mb-7">
+                <StepHeader index={1} title="选择产品类型" />
+                <ProductTypeGrid selectedId={catKey} onSelect={setCatKey} />
+              </div>
+
+              {/* Step 2 · 预算 */}
+              <div className="space-y-3 mb-7">
+                <StepHeader index={2} title="设置预算范围" />
+                <BudgetRange
+                  min={category.budget.min}
+                  max={category.budget.max}
+                  value={budget}
+                  onChange={setBudget}
+                />
+              </div>
+
+              {/* Step 3 · 用途 */}
+              <div className="space-y-3 mb-7">
+                <StepHeader
+                  index={3}
+                  title="主要用途"
+                  hint={<span>（可多选）</span>}
+                />
+                <UseCaseChips
+                  options={LAPTOP_USE_CASES}
+                  selected={useCases}
+                  onToggle={toggleUseCase}
+                />
+              </div>
+
+              {/* Step 4 · 权重 */}
+              <div className="space-y-3 mb-6">
+                <StepHeader
+                  index={4}
+                  title="你的优先级权重"
+                  hint={<span>分配 100 分，可开关维度，可自定义</span>}
+                  trailing={
+                    <span className="text-xs text-muted-foreground">
+                      已分配 <span className="font-mono text-foreground font-semibold">{total}</span> / 100
+                    </span>
+                  }
+                />
+                <div className="relative h-1.5 rounded-full bg-muted overflow-hidden" aria-hidden>
+                  <div
+                    className="absolute inset-y-0 left-0 bg-primary transition-[width]"
+                    style={{ width: `${Math.min(100, total)}%` }}
+                  />
+                </div>
+                <WeightAllocator
+                  dimensions={category.dimensions}
+                  weights={weights}
+                  enabled={enabled}
+                  onWeightChange={(k, v) => setWeights((p) => ({ ...p, [k]: v }))}
+                  onToggle={(k, on) => setEnabled((p) => ({ ...p, [k]: on }))}
+                />
+              </div>
+
+              {/* CTA */}
               <button
                 type="button"
-                onClick={() => goConfigure("laptop")}
-                className="inline-flex items-center justify-center h-11 px-5 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition"
-                data-testid="button-cta-start"
+                onClick={generate}
+                className="w-full h-12 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition inline-flex items-center justify-center gap-2"
+                data-testid="button-generate"
               >
-                开始选择笔记本
+                生成我的推荐
+                <ArrowRight className="size-4" />
               </button>
-              <button
-                type="button"
-                onClick={scrollToScoring}
-                className="inline-flex items-center justify-center h-11 px-5 rounded-lg border bg-card text-foreground hover:bg-muted transition"
-                data-testid="button-view-scoring"
-              >
-                查看评分逻辑
-              </button>
-            </div>
-
-            <p className="mt-6 text-xs text-muted-foreground">
-              当前为前端原型，暂未接入实时价格与购买链接。
-            </p>
-          </div>
-
-          <div className="md:justify-self-end w-full md:max-w-[420px]">
-            <QuickStartCard onStart={goConfigure} />
-          </div>
-        </section>
-
-        {/* ============ CATEGORIES ============ */}
-        <section className="mt-16 md:mt-20">
-          <div className="flex items-end justify-between gap-4 mb-5">
-            <div>
-              <h2 className="text-xl md:text-2xl font-semibold tracking-tight">支持的品类</h2>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                当前先做透笔记本，其他品类陆续开放。
+              <p className="text-center mt-2 text-[11px] text-muted-foreground">
+                预计 1–2 秒完成分析
               </p>
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {CATEGORIES.map((cat) => (
-              <CategoryListItem key={cat.key} category={cat} onPick={goConfigure} />
-            ))}
-          </div>
-        </section>
+            </section>
 
-        {/* ============ SCORING EXPLAIN ============ */}
-        <ScoringExplain />
+            {/* ============ 右侧栏 ============ */}
+            <aside className="space-y-4">
+              <RecommendationPreview
+                catKey={catKey}
+                budget={budget}
+                weights={weights}
+                disabledDims={disabledDims}
+              />
+              <CommunityCard />
+            </aside>
+          </div>
+        </main>
       </div>
-    </AppShell>
+    </div>
   );
 }

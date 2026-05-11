@@ -4,6 +4,52 @@
 
 ---
 
+## 2026-05-12 · `ui/consumer-app-redesign`
+
+### Changed
+- **首页改成 dashboard 布局**:左侧 SideNav(8 项)+ 顶部 TopBar(5 项 + 搜索/通知/头像/主题/GitHub)+ 中间 4 步配置卡 + 右侧 Top-3 实时预览 + 社区动态。
+- 笔记本评分维度从 6 个精简到 5 个(去掉 build),与设计稿一致:performance / battery / display / portability / value。
+- 默认权重改为 0–100 刻度(performance 30 / battery 20 / display 15 / portability 10 / value 7),与截图同步。
+- `lib/scoring.ts`:`scoreProducts(cat, weights, budget, disabledDims?)` 新增可选参数,被关闭的维度真正不参与打分。
+- `lib/router.tsx` + `pages/Result.tsx` + `App.tsx`:result 视图透传 `disabledDims?: string[]`。
+- `pages/Home.tsx` 彻底重写为 dashboard 编排页,只做 layout + 状态串联。
+
+### Added
+- `components/dashboard/SideNav.tsx`:8 项左侧导航,首页 / 选购助手 可用,其余 toast「敬请期待」。
+- `components/dashboard/TopBar.tsx`:Logo + 5 项顶部导航 + 搜索框 + 通知 + 头像 + 主题切换 + GitHub。
+- `components/dashboard/StepHeader.tsx`:统一的「编号圆圈 + 标题 + 提示 + 右侧 slot」步骤头。
+- `components/dashboard/ProductTypeGrid.tsx`:6 个品类网格,只有笔记本可点,其它即将。
+- `components/dashboard/BudgetRange.tsx`:带气泡显示当前预算的 slider。
+- `components/dashboard/UseCaseChips.tsx`:多选 chip,选中显示 ✓。
+- `components/dashboard/WeightAllocator.tsx`:每个维度一行 slider + 百分比 + 开关 + 配色条;导出 `useWeightTotal()` 助手。
+- `components/dashboard/RecommendationPreview.tsx`:右侧实时 Top-3 卡,直接复用 `scoreProducts()`。
+- `components/dashboard/CommunityCard.tsx`:右侧 mock 社区动态列表。
+- `data/navigation.ts`:`SIDE_NAV` 8 项 + `TOP_NAV` 5 项。
+- `data/productTypes.ts`:6 个品类元数据(笔记本 available,其它 即将)。
+- `data/communityFeed.ts`:4 条 mock 帖。
+- `data/useCases.ts` 扩到 9 项:办公/学习/编程/游戏/创作/视频/出差/日常/其他。
+- `lib/icons.ts` 补充:Tablet / Watch / Gamepad2 / Home / Compass / Scale / Heart / FileText / MessageCircle / Trophy / UserCircle。
+
+### UX Notes
+- 维度开关是真开关:关掉「便携性」后总分从 82 掉到 72,Top-3 排序立刻刷新。
+- 自定义维度按钮只展开输入框,**前端态**,不会污染评分逻辑。
+- 所有未开放入口(其它品类、其它导航、自定义维度提交等)统一走 `useToast()` 弹「xxx · 敬请期待」,行为一致。
+- 默认主题改为 light,可在 TopBar 切换。
+- 移动端(390px):左侧 SideNav 折叠隐藏,产品类型 2 列网格,所有控件可点。
+
+### Known Issues
+- Configure / Result 页仍走 legacy `AppShell`,没套新 dashboard 壳,导航连贯性待打通。
+- mock 产品库只有 7 款笔记本,Top-3 切换幅度有限。
+- 自定义维度仅 UI,不参与评分。
+
+### Next Steps
+- 让 Configure / Result 也用 TopBar + SideNav 统一壳。
+- mock 产品库扩到 10–15 款笔记本,让权重/预算调节差异更明显。
+- 自定义维度接入评分(允许给手输维度临时打分或用 fallback)。
+- 启用 GitHub Pages 拿一个稳定预览链接(workflow 已就绪)。
+
+---
+
 ## 2026-05-11 · `ui/consumer-app-redesign`
 
 ### Changed

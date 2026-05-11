@@ -7,12 +7,16 @@
 import {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
   Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
+  Tablet, Watch, Gamepad2,
+  Home, Compass, Scale, Heart, FileText, MessageCircle, Trophy, UserCircle,
   type LucideIcon,
 } from "lucide-react";
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
   Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
+  Tablet, Watch, Gamepad2,
+  Home, Compass, Scale, Heart, FileText, MessageCircle, Trophy, UserCircle,
 };
 
 export function getIcon(name: string): LucideIcon {
