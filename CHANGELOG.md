@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-05-12 · `ui/consumer-app-redesign` (修复补丁)
+
+### Fixed
+- **结果页返回会跳到旧版 Configure 页**:`reconfigure` 跳的是 `configure` 路由 = 旧版问卷页(死页面)。已彻底删除 `configure` 路由 + `Configure.tsx` + 旧 `components/configure/` + `AppShell.tsx` + 残留 `components/home/`。Result 页的「返回首页 / 重新调整」全部回到新版 dashboard 首页。
+- **首页缺少 100 分约束**:权重 slider 可拖过 100,且按钮一直可点。现在每个 slider 的 max 动态等于「100 - 其他启用维度之和」,从交互层根本不可能超 100;total ≠ 100 时按钮 disabled + 提示「还需要分配 X 分」或「已超出 X 分」。
+- **右侧栏在主流桌面尺寸看不到**:之前用 `xl:grid-cols-[1fr_320px]`(1280px 才触发),很多 13–14 寸笔记本宽度不到。改成 `lg:` 断点(1024px),桌面端必出现。
+- **关闭维度后总分残留**:之前关掉一个维度,如果它带着权重,再开回来还是带着旧权重,容易做出 >100 的状态。现在关掉时立即清零该维度的权重。
+
+### Changed
+- 默认权重改为正好 100 分:performance 30 + battery 20 + display 20 + portability 15 + value 15 = 100。
+- Result 页改用新版 dashboard 壳(TopBar + SideNav),不再用 legacy AppShell,导航连贯性打通。
+- `Result.tsx` 中 `onReconfigure` 重命名为 `onBackHome`,语义更清晰。
+
+### Added
+- 权重区右上角 100 分徽章 + 三态颜色(under: amber / ok: emerald / over: red)。
+- 权重进度条:0..100 用绿色,>100 部分红色独立显示。
+- 「平均分配」按钮:一键把 100 分均分到所有启用维度。
+- 「重置」按钮:恢复默认权重 + 全部开启。
+
+### Removed
+- `client/src/pages/Configure.tsx`(旧问卷页,死代码)。
+- `client/src/components/AppShell.tsx`(旧 shell,被 dashboard 替换)。
+- `client/src/components/configure/`(5 个旧问卷子组件)。
+- `client/src/components/home/`(上次 redesign 中间产物 3 个组件)。
+- `client/src/components/CategoryCard.tsx`、`client/src/data/scoringExplain.ts`(无引用)。
+- router 的 `configure` 视图类型。
+
+### Validation (Playwright e2e, 1440×900)
+- 首页:推荐预览 ✓ + 社区动态 ✓ + 徽章 100/100 ✓ + 按钮可点。
+- 拖动 perf 试图到 99 → 被 max=30 钳制回 30,总分始终 ≤ 100。
+- 关闭便携 → 总分 85,按钮 disabled,提示「还需要分配 15 分」。
+- 重开便携(已清零)→ 总分仍 85,按钮 disabled。
+- 平均分配 → 100,按钮可点。
+- 生成 → Result(SideNav + TopBar 都在)→ 顶部「返回首页」/ 底部「回到首页重新调整」/ Logo / SideNav-advisor 四个入口都回到 Home。
+- 手机品类点击 → toast「手机 · 敬请期待」。
+- 移动端 390×800:SideNav `display:none`,顶导 nav hidden,右侧栏 stack 到主卡下方。
+- 控制台 0 errors。
+
+---
+
 ## 2026-05-12 · `ui/consumer-app-redesign`
 
 ### Changed
