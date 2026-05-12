@@ -1,6 +1,5 @@
 import type { Express, Request, Response } from "express";
 import type { Server } from "node:http";
-import { storage } from "./storage";
 import {
   recommendRequestSchema,
   type RecommendedProduct,
@@ -17,9 +16,6 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // 用 storage 防 "unused import"(将来真要用 session/user CRUD 时直接接)
-  void storage;
-
   /**
    * POST /api/recommend
    *
