@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ListOrdered, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, ListOrdered, RotateCcw, Sparkles, Database } from "lucide-react";
 import { SideNav } from "@/components/dashboard/SideNav";
 import { TopBar } from "@/components/dashboard/TopBar";
 import { CompareTable } from "@/components/result/CompareTable";
@@ -13,12 +13,19 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice, getCategory } from "@/lib/dimensions";
 import { useRouter } from "@/lib/router";
 import { scoreProducts, type Scored } from "@/lib/scoring";
+import { localMockRecommendations } from "@/lib/recommendApi";
+import type { RecommendedProduct } from "@shared/recommend/types";
+import type { Product } from "@/lib/mockProducts";
 
 type Props = {
   catKey: string;
   weights: Record<string, number>;
   budget: number;
   disabledDims?: string[];
+  /** Home 透传过来的服务端推荐。缺了 = 本页走本地 mock 兜底。 */
+  products?: RecommendedProduct[];
+  /** "ai" 或 "mock";缺了 = "mock"。 */
+  source?: "ai" | "mock";
 };
 
 const LOADING_MS = 1100;
@@ -28,7 +35,9 @@ const LOADING_MS = 1100;
  * 「修改条件」和「重新生成」全部回到新版首页 home。
  * 旧的 configure 路由已彻底删除,这里不存在任何回到旧页的路径。
  */
-export default function Result({ catKey, weights, budget, disabledDims }: Props) {
+export default function Result({
+  catKey, weights, budget, disabledDims, products, source,
+}: Props) {
   const { go } = useRouter();
   const category = getCategory(catKey);
 
@@ -36,11 +45,34 @@ export default function Result({ catKey, weights, budget, disabledDims }: Props)
     () => new Set(disabledDims ?? []),
     [disabledDims]
   );
-  const scored = useMemo(
-    () => scoreProducts(category, weights, budget, disabledSet),
-    [category, weights, budget, disabledSet]
-  );
-  const loading = useFakeLoading(LOADING_MS, [catKey, weights, budget, disabledSet]);
+
+  /**
+   * 优先用 Home 透传的 server products(AI 或 server mock);
+   * 如果用户是刷新进来的 / Home 跳转丢状态、products 为空,
+   * 本页面再走一次本地 mock——这是「刷新不白屏」的兑底。
+   */
+  const adapted: Scored[] = useMemo(() => {
+    if (products && products.length > 0) {
+      return products.map(adaptRecommendedToScored);
+    }
+    // Fallback A:调本地 mock——不走 scoreProducts 也能用,但评分需要按当前 weights
+    const localMock = localMockRecommendations({
+      category: catKey,
+      budget,
+      useCases: [],
+      weights,
+      disabledDimensions: Array.from(disabledSet),
+    });
+    if (localMock.length > 0) return localMock.map(adaptRecommendedToScored);
+    // Fallback B(极端场景):直接 scoreProducts
+    return scoreProducts(category, weights, budget, disabledSet);
+  }, [products, catKey, weights, budget, disabledSet, category]);
+
+  const effectiveSource: "ai" | "mock" =
+    source && products && products.length > 0 ? source : "mock";
+
+  const scored = adapted;
+  const loading = useFakeLoading(LOADING_MS, [catKey, weights, budget, disabledSet, products]);
 
   /** 「返回 / 修改条件」一律回新版首页。 */
   const backToHome = () => go({ name: "home" });
@@ -74,6 +106,7 @@ export default function Result({ catKey, weights, budget, disabledDims }: Props)
                   <p className="mt-2 text-sm text-muted-foreground">
                     {category.label} · 预算 ≤ {formatPrice(budget)} · 按你的权重排序
                   </p>
+                  {!loading && <SourceBadge source={effectiveSource} />}
                 </div>
                 <ShareButton />
               </div>
@@ -241,4 +274,58 @@ function useFakeLoading(ms: number, deps: unknown[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   return loading;
+}
+
+/**
+ * 把 wire 类型(RecommendedProduct)还原成 UI 子组件期待的 Scored shape。
+ * 子组件读取的字段:scored.product.{id,brand,name,price,accent,scores,highlights,tagline,pros,cons,buyLinks}
+ * 以及 scored.matchPct。
+ * buyLinks 用空数组兜底——AI/server 路径没有这个字段,UI 里 slice(0,1).map 自动空 render。
+ */
+function adaptRecommendedToScored(p: RecommendedProduct): Scored {
+  const product: Product = {
+    id: p.id,
+    brand: p.brand,
+    name: p.name,
+    tagline: p.tagline,
+    price: p.price,
+    image: "💻",
+    accent: p.accent ?? "210 8% 60%",
+    scores: p.dimensions,
+    highlights: p.highlights,
+    specs: [],
+    pros: p.pros,
+    cons: p.cons,
+    buyLinks: [],
+  };
+  return {
+    product,
+    totalScore: p.score,
+    matchPct: Math.round(p.score),
+    dimensionContrib: [],
+  };
+}
+
+/** 轻量 source chip:仅展示来源,不展示 provider error 详情。 */
+function SourceBadge({ source }: { source: "ai" | "mock" }) {
+  if (source === "ai") {
+    return (
+      <span
+        className="mt-2 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+        data-testid="source-badge"
+        data-source="ai"
+      >
+        <Sparkles className="size-3" /> AI 搜索结果
+      </span>
+    );
+  }
+  return (
+    <span
+      className="mt-2 inline-flex items-center gap-1 rounded-md border border-muted-foreground/30 bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+      data-testid="source-badge"
+      data-source="mock"
+    >
+      <Database className="size-3" /> 当前为演示数据
+    </span>
+  );
 }

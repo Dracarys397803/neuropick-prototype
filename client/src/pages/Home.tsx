@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { ArrowRight, AlertCircle, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowRight, AlertCircle, CheckCircle2, RotateCcw, Loader2 } from "lucide-react";
 import { SideNav } from "@/components/dashboard/SideNav";
 import { TopBar } from "@/components/dashboard/TopBar";
 import { StepHeader } from "@/components/dashboard/StepHeader";
@@ -13,6 +13,7 @@ import { getCategory, buildDimWeights } from "@/lib/dimensions";
 import { LAPTOP_USE_CASES } from "@/data/useCases";
 import { useRouter } from "@/lib/router";
 import { useToast } from "@/hooks/use-toast";
+import { fetchRecommendations } from "@/lib/recommendApi";
 
 /**
  * 笔记本默认 0..100 权重 —— 严格等于 100。
@@ -45,6 +46,8 @@ export default function Home() {
   const [enabled, setEnabled] = useState<Record<string, boolean>>(
     () => Object.fromEntries(category.dimensions.map((d) => [d.key, true]))
   );
+  /** “生成”按钮是否正在调用 /api/recommend。 */
+  const [submitting, setSubmitting] = useState(false);
 
   const total = useWeightTotal(category.dimensions, weights, enabled);
   /** 严格 100 分约束:total 必须正好等于 100 才允许提交。 */
@@ -82,7 +85,7 @@ export default function Home() {
     setEnabled(Object.fromEntries(category.dimensions.map((d) => [d.key, true])));
   }, [category]);
 
-  function generate() {
+  async function generate() {
     if (!isValid) {
       toast({
         title: total > 100 ? "权重超出 100 分" : "权重不足 100 分",
@@ -90,11 +93,25 @@ export default function Home() {
       });
       return;
     }
+    if (submitting) return;
+
     // 把所有启用维度的权重透传到 result;关闭维度通过 disabledDims 告知。
     const disabledSet = new Set(
       category.dimensions.filter((d) => enabled[d.key] === false).map((d) => d.key)
     );
     const dimWeights = buildDimWeights(category.dimensions, weights, disabledSet);
+
+    setSubmitting(true);
+    // 注意:fetchRecommendations 内部已双保险 —— 服务端业务失败返 mock、
+    // 前端 fetch 本身出错也走本地 mock。这里拿到的 res 始终是合法对象。
+    const res = await fetchRecommendations({
+      category: catKey,
+      budget,
+      useCases: Array.from(useCases),
+      weights: dimWeights,
+      disabledDimensions: disabledDims,
+    });
+    setSubmitting(false);
 
     go({
       name: "result",
@@ -102,6 +119,8 @@ export default function Home() {
       weights: dimWeights,
       budget,
       disabledDims,
+      products: res.products,
+      source: res.source,
     });
   }
 
@@ -197,17 +216,26 @@ export default function Home() {
               <button
                 type="button"
                 onClick={generate}
-                disabled={!isValid}
+                disabled={!isValid || submitting}
                 className={[
                   "w-full h-12 rounded-lg font-medium transition inline-flex items-center justify-center gap-2",
-                  isValid
+                  isValid && !submitting
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-muted text-muted-foreground cursor-not-allowed",
                 ].join(" ")}
                 data-testid="button-generate"
               >
-                生成我的推荐
-                <ArrowRight className="size-4" />
+                {submitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    正在搜索真实评测与价格…
+                  </>
+                ) : (
+                  <>
+                    生成我的推荐
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
               </button>
               <p
                 className={[
@@ -216,11 +244,13 @@ export default function Home() {
                 ].join(" ")}
                 data-testid="generate-hint"
               >
-                {isValid
-                  ? "预计 1–2 秒完成分析"
-                  : remaining > 0
-                    ? `还需要分配 ${remaining} 分才能生成`
-                    : `已超出 ${-remaining} 分,请调低后再生成`}
+                {submitting
+                  ? "正在调用推荐服务…"
+                  : isValid
+                    ? "预计 1–2 秒完成分析"
+                    : remaining > 0
+                      ? `还需要分配 ${remaining} 分才能生成`
+                      : `已超出 ${-remaining} 分,请调低后再生成`}
               </p>
             </section>
 

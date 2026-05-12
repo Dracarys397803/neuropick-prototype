@@ -1,0 +1,92 @@
+/**
+ * 评分逻辑(纯函数,无 UI 依赖)。
+ *
+ * 输入:品类元信息 + 用户权重 + 预算
+ * 输出:排序后的候选列表,附带每个维度的加权贡献
+ *
+ * 在 client(右侧实时预览)与 server(/api/recommend mock fallback)之间共享。
+ */
+import type { CategoryMeta, DimensionKey } from "./dimensions";
+import { getProducts, type Product } from "./products";
+
+export type Weights = Record<DimensionKey, number>;
+
+export type DimensionContribution = {
+  key: DimensionKey;
+  weight: number;
+  raw: number;
+  weighted: number;
+};
+
+export type Scored = {
+  product: Product;
+  totalScore: number;
+  dimensionContrib: DimensionContribution[];
+  matchPct: number;
+};
+
+/** 允许略超预算的容忍度(5%) */
+const BUDGET_TOLERANCE = 1.05;
+/** 预算契合奖励上限 */
+const BUDGET_BONUS_MAX = 5;
+
+export function scoreProducts(
+  category: CategoryMeta,
+  weights: Weights,
+  budget: number,
+  disabledDims?: ReadonlySet<string>
+): Scored[] {
+  const effectiveDims = category.dimensions.filter(
+    (d) => !disabledDims || !disabledDims.has(d.key)
+  );
+  const candidates = getProducts(category.key).filter(
+    (p) => p.price <= budget * BUDGET_TOLERANCE
+  );
+  const effectiveWeights = effectiveDims.reduce<Weights>((acc, d) => {
+    acc[d.key] = weights[d.key] ?? 0;
+    return acc;
+  }, {} as Weights);
+  const totalWeight = sumWeights(effectiveWeights);
+
+  return candidates
+    .map((product) => scoreOne(product, effectiveDims, effectiveWeights, budget, totalWeight))
+    .sort((a, b) => b.totalScore - a.totalScore);
+}
+
+function scoreOne(
+  product: Product,
+  dimensions: CategoryMeta["dimensions"],
+  weights: Weights,
+  budget: number,
+  totalWeight: number
+): Scored {
+  let weighted = 0;
+  const dimensionContrib = dimensions.map<DimensionContribution>((d) => {
+    const weight = weights[d.key] ?? 0;
+    const raw = product.scores[d.key] ?? 0;
+    const contrib = (raw * weight) / totalWeight;
+    weighted += contrib;
+    return { key: d.key, weight, raw, weighted: contrib };
+  });
+
+  const totalScore = Math.min(100, weighted + budgetBonus(product.price, budget));
+
+  return {
+    product,
+    totalScore,
+    dimensionContrib,
+    matchPct: Math.round(totalScore),
+  };
+}
+
+function sumWeights(weights: Weights): number {
+  const sum = Object.values(weights).reduce((a, b) => a + b, 0);
+  return sum || 1;
+}
+
+/** 预算契合奖励:价格离预算上限越远,奖励越多,最多 +5 分 */
+function budgetBonus(price: number, budget: number): number {
+  const headroom = Math.max(budget * 0.4, 1);
+  const fit = Math.min(1, (budget - price) / headroom);
+  return Math.max(0, fit) * BUDGET_BONUS_MAX;
+}

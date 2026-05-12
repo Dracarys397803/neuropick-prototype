@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-05-12 · `feature/ai-search-poc` (AI 推荐 POC)
+
+仅在 `feature/ai-search-poc` 分支。**UI 视觉与结果页布局未变**,仅加轻量 source badge。稳定演示分支 `ui/consumer-app-redesign` 不受影响。
+
+### Added
+- `shared/recommend/*` 新目录:`dimensions.ts` / `products.ts` / `scoring.ts` / `types.ts`。纯数据 + 纯评分从 `client/src/lib/` 迁移过来,让 server 能复用但不依赖任何 UI / Vite / browser 代码。
+- `server/ai/normalize.ts`:用 zod 校验 AI 返回结构,必填字段缺失 → 抛错 → 走 mock fallback。
+- `server/ai/recommendProvider.ts`:`PerplexityProvider` 完整实现 (默认 model `sonar`,`response_format.json_schema` 严格 JSON);`OpenAiPlaceholderProvider` 明确抛错 → 走 fallback。`AbortSignal.timeout` 复用 `AI_SEARCH_TIMEOUT_MS` (clamp 1s–30s)。
+- `server/recommend/mockRecommendations.ts`:复用 shared `scoreProducts`,返 Top 10。
+- `server/routes.ts`:`POST /api/recommend`。只有 `body` 不合法才 400;业务失败 (无 key / 超时 / provider 报错 / normalize 报错) **永远不 5xx**,统一 200 + `source="mock"`。
+- `client/src/lib/recommendApi.ts`:`fetchRecommendations` 15s 超时 + 第二道端本地 mock fallback;`localMockRecommendations` 复用 shared scoring 避免别处重复。
+- `client/src/pages/Home.tsx`:生成按钮 async,loading 文案「正在搜索真实评测与价格…」。
+- `client/src/pages/Result.tsx`:优先渲染 server `products`,缺了 / 刷新丢失状态 → 本地 mock fallback,不白屏。新增轻量 `SourceBadge` (AI / 演示数据),不展示原始 provider error。
+- `.env.example`:`AI_PROVIDER` / `AI_API_KEY` / `AI_SEARCH_TIMEOUT_MS`。`.env` 本身已被 `.gitignore` 排除。
+- README 新增「AI 搜索 POC」节。
+
+### Notes
+- 未合并到 main,也不修改 `ui/consumer-app-redesign`。
+- 验证:`npm run check`/`npm run build`/`npm run dev` 全过;`POST /api/recommend` 无 key 返回 `source="mock"` + 200。
+
+---
+
 ## 2026-05-12 · `ui/consumer-app-redesign` (代码清理 / hygiene)
 
 本轮只做代码整理,**UI 视觉与交互未变**。

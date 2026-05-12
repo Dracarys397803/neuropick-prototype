@@ -15,6 +15,8 @@ function ViewSwitch() {
         weights={view.weights}
         budget={view.budget}
         disabledDims={view.disabledDims}
+        products={view.products}
+        source={view.source}
       />
     );
   }

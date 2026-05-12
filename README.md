@@ -59,6 +59,20 @@ npm run start      # 以生产模式启动 Express,serve dist/public
 
 也可以单独把 `dist/public/` 作为纯静态站点部署到任何 CDN / 静态托管平台。
 
+## AI 搜索 POC (实验性,仅在 feature/ai-search-poc 分支)
+
+该分支新增 `POST /api/recommend` 接口,可选调用 Perplexity Sonar 返回真实推荐;拿不到 key / 超时 / 返回不合法 → 自动 fallback 到 mock,接口总返 200,UI 不会白屏。
+
+```bash
+cp .env.example .env
+# 编辑 .env,填入 AI_API_KEY=...
+npm run dev
+```
+
+- 默认 provider = `perplexity` (完整实现)。`openai` 是占位,会直接抛错走 fallback。
+- 不填 key 也能 `npm run dev` 和 `npm run build`,结果页会显示「当前为演示数据」 badge。
+- 本功能不影响稳定演示分支 `ui/consumer-app-redesign`。
+
 ## Preview
 
 - **Local preview**: `npm run dev` → [http://localhost:5000](http://localhost:5000)

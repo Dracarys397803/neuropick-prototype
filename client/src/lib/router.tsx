@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import type { RecommendedProduct } from "@shared/recommend/types";
 
 /**
  * 内存路由 —— 只保留两个视图:
@@ -6,6 +7,10 @@ import { createContext, useContext, useState, useCallback, ReactNode } from "rea
  * - result:   生成后的推荐报告页
  *
  * 旧的 `configure` 视图已废弃并删除,所有"返回 / 修改条件"操作都回到 home。
+ *
+ * `products` / `source` 是 POC 加的字段:Home 发 /api/recommend 拿到结果后
+ * 直接透传给 Result,Result 不再本地运行 scoreProducts。
+ * 两个字段均为可选——缺了 Result 页会用本地 mock 兜底(刷新/跳转丢状态场景)。
  */
 export type View =
   | { name: "home" }
@@ -16,6 +21,10 @@ export type View =
       budget: number;
       /** 被用户关闭的维度 key。不传 = 全部启用。 */
       disabledDims?: string[];
+      /** 服务端返回的推荐列表。缺 = Result 本地走 mock 兜底。 */
+      products?: RecommendedProduct[];
+      /** 推荐来源。缺 = "mock"。 */
+      source?: "ai" | "mock";
     };
 
 type Ctx = {
