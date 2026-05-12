@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-05-12 · `ui/consumer-app-redesign` (推荐结果页 UI 升级)
+
+### Added
+- **第 4-10 名单列横向卡片列表**:在 Top 3 重点推荐区域下方新增「第 4-10 名」区块,做成「一行一个」的单列横向卡片,按排名从上到下排列。每行包含:排名编号 `#N` · 缩略图 · 品牌+产品名+一句话说明 · 价格+2-4 个亮点标签 · 圆形匹配分数 · `对比` / `查看详情` 按钮。窄屏(<768px)下卡片内部允许换行,但仍严格保持「一张卡片一行」结构,不会变成多列网格。
+- **`LaptopThumbnail` 组件**:用 SVG 绘制更像真实笔记本的小图(上盖+屏幕+高光+底座梯形+键盘井+触控板),用 `product.accent` 上色统一三张卡片的视觉风格,彻底替换原本的 emoji 占位。
+- **`TopRecommendationCard` / `RankedListItem` 两个独立组件**:把推荐区块拆出去,Top 3 用大卡(带 banner 缩略图+维度条+优缺点+CTA),4-10 名用紧凑横向行卡。Result 页只负责数据切片和布局,不再混进单卡 markup。
+- **mock 笔记本库扩到 11 款**:在原有 7 款基础上补 Zenbook S 14 / Spectre x360 14 / Swift Edge 16 / MateBook X Pro,让 Top 3 + 4-10 名页面有完整 10 行数据。
+
+### Changed
+- **笔记本默认预算从 ¥10,000 调到 ¥18,000**:之前默认预算只能放进 4 款笔记本,触发不到「Top 3 + 4-10 名」的设计意图。提高后 10/11 款落在预算内,产品列表完整。
+- **「查看详情」当前是占位**:点按后弹 toast「敬请期待 - 详情页正在路上」,把后续真实详情页路由的 TODO 显式留出来。
+
+### Removed
+- `client/src/components/result/ProductCard.tsx`:被 `TopRecommendationCard` + `RankedListItem` 完全取代,无残留引用。
+
+### Validation (Playwright e2e)
+- 1440×900:Top 3 出现 3 张大卡(`card-top-*`),第 4-10 名容器 `[data-testid="ranked-list"]` 渲染 7 行(`row-ranked-*`),每行可定位到对比按钮 + 查看详情链接 + 缩略图 SVG。
+- 768×1024:依然 7 行,每行宽度填满列表容器(524 px),`row[i+1].y > row[i].y + row[i].height`,严格单列堆叠,无并排。
+- 视觉:三张 Top 3 缩略图配色风格一致(屏幕+底座轮廓清晰),4-10 名缩略图与 Top 3 同源同风格。
+
+---
+
 ## 2026-05-12 · `ui/consumer-app-redesign` (slider 独立补丁)
 
 ### Fixed

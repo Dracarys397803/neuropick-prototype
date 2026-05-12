@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, RotateCcw } from "lucide-react";
+import { ArrowLeft, ListOrdered, RotateCcw, Sparkles } from "lucide-react";
 import { SideNav } from "@/components/dashboard/SideNav";
 import { TopBar } from "@/components/dashboard/TopBar";
 import { CompareTable } from "@/components/result/CompareTable";
 import { EmptyState } from "@/components/result/EmptyState";
 import { LoadingState } from "@/components/result/LoadingState";
-import { ProductCard } from "@/components/result/ProductCard";
+import { RankedListItem } from "@/components/result/RankedListItem";
 import { ShareButton } from "@/components/result/ShareButton";
 import { SummaryCard } from "@/components/result/SummaryCard";
+import { TopRecommendationCard } from "@/components/result/TopRecommendationCard";
+import { useToast } from "@/hooks/use-toast";
 import { formatPrice, getCategory } from "@/lib/dimensions";
 import { useRouter } from "@/lib/router";
 import { scoreProducts, type Scored } from "@/lib/scoring";
@@ -108,6 +110,7 @@ function Report({
   onBackHome: () => void;
 }) {
   const category = getCategory(catKey);
+  const { toast } = useToast();
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
   function toggleCompare(id: string) {
@@ -116,18 +119,32 @@ function Report({
     );
   }
 
+  function viewDetails(id: string) {
+    const p = scored.find((s) => s.product.id === id)?.product;
+    toast({
+      title: `${p?.name ?? "详情页"} · 敬请期待`,
+      description: "产品详情页在建设中。现阶段如需查看详细参数，可点「对比」加入对比表。",
+    });
+  }
+
   const top3 = scored.slice(0, 3);
-  const rest = scored.slice(3);
+  // 第 4–10 名：最多 7 位。低于 10 条数据时自动截断。
+  const rest = scored.slice(3, 10);
 
   return (
     <div className="space-y-12">
       <SummaryCard scored={scored} weights={weights} dimensions={category.dimensions} catKey={catKey} />
 
-      <div>
-        <h2 className="text-xl font-semibold mb-5">最匹配的三款</h2>
+      {/* ╔══ Top 3 重点推荐 ══╗ */}
+      <section>
+        <SectionHeader
+          icon={<Sparkles className="size-4" />}
+          title="最匹配的三款"
+          subtitle="综合评分最高、最推荐的 3 款。点击「对比」可加入对比表。"
+        />
         <div className="grid lg:grid-cols-3 gap-5">
           {top3.map((s, idx) => (
-            <ProductCard
+            <TopRecommendationCard
               key={s.product.id}
               scored={s}
               rank={idx + 1}
@@ -138,7 +155,7 @@ function Report({
             />
           ))}
         </div>
-      </div>
+      </section>
 
       {compareIds.length >= 2 && (
         <CompareTable
@@ -149,24 +166,28 @@ function Report({
         />
       )}
 
+      {/* ╔══ 第 4–10 名 —— 单列横向列表 ══╗ */}
       {rest.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-5">其他候选 ({rest.length})</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <section data-testid="section-ranked-list">
+          <SectionHeader
+            icon={<ListOrdered className="size-4" />}
+            title="第 4–10 名"
+            subtitle="更多候选，适合进一步比较"
+            countText={`共 ${rest.length} 款`}
+          />
+          <div className="flex flex-col gap-2.5" data-testid="ranked-list">
             {rest.map((s, idx) => (
-              <ProductCard
+              <RankedListItem
                 key={s.product.id}
                 scored={s}
                 rank={idx + 4}
-                compact
-                dimensions={category.dimensions}
-                weights={weights}
                 onCompare={toggleCompare}
                 comparing={compareIds.includes(s.product.id)}
+                onViewDetails={viewDetails}
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       <div className="text-center py-8 border-t">
@@ -180,6 +201,33 @@ function Report({
           <RotateCcw className="size-4" /> 回到首页重新调整
         </button>
       </div>
+    </div>
+  );
+}
+
+/** 区块标题 —— Top 3 / 4-10 名 两个区块都用它，保证视觉分区清晰。 */
+function SectionHeader({
+  icon, title, subtitle, countText,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  countText?: string;
+}) {
+  return (
+    <div className="mb-5 flex items-end justify-between gap-3">
+      <div>
+        <h2 className="text-xl font-semibold inline-flex items-center gap-2">
+          <span className="text-primary">{icon}</span>
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+        )}
+      </div>
+      {countText && (
+        <span className="text-[11px] font-mono text-muted-foreground">{countText}</span>
+      )}
     </div>
   );
 }

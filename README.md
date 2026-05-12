@@ -18,7 +18,8 @@ Neuropick 是一个面向普通消费者的 AI 3C 硬件选购助手。当前版
   - 右侧 Top 3 推荐预览 · 实时随配置变化(`lg:` 断点上必出)
   - 右侧社区动态 mock
   - 默认浅色主题、可切换深色
-  - 笔记本 Result 页:多套新版 dashboard 壳(SideNav + TopBar),Top 3 推荐、其他候选、对比表、维度雷达(从上一版留下);「返回首页」统一回新版 home,不会跳到旧页面
+  - 笔记本 Result 页:新版 dashboard 壳(SideNav + TopBar),**Top 3 重点大卡 + 第 4-10 名单列横向列表**(一行一个,窄屏依然单列),产品缩略图由 `LaptopThumbnail` SVG 组件统一绘制(屏幕+机身形态明确),后续有对比表、维度雷达;「返回首页」统一回新版 home,不会跳到旧页面
+  - **mock 笔记本库**:11 款涵盖 Apple / Dell / Lenovo / ASUS / HP / Acer / Huawei / Redmi / Framework,默认预算 ¥18,000 可凑齐 Top 3 + 4-10 名 共 10 行
 - **尚未完成**:
   - 真实产品数据库(目前为 mock)
   - 真实 AI 推荐接口
