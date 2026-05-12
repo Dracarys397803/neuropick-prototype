@@ -120,19 +120,21 @@ export function WeightAllocator({
             </div>
 
             <div className="relative">
+              {/*
+                重要:slider 的 max **永远是 100**,这样拇指位置始终反映真实百分比,
+                拖动 A 不会造成 B/C/D 的拇指位置跳动。
+                越界护栏放到 onChange 里做:拖到会超 100 的那一刻被 clamp 住。
+              */}
               <input
                 type="range"
                 min={0}
-                /**
-                 * 关键:max 不再是固定 100,而是 100 - 其他维度之和。
-                 * 这样从交互上就无法拖到使总和 > 100。
-                 */
-                max={dynMax}
+                max={100}
                 step={1}
-                value={Math.min(w, dynMax)}
+                value={w}
                 disabled={!on}
                 onChange={(e) => {
                   const next = Number(e.target.value);
+                  // 动态上限 = 100 - 其他启用维度之和
                   const clamped = Math.min(next, dynMax);
                   onWeightChange(d.key, clamped);
                 }}
@@ -140,7 +142,7 @@ export function WeightAllocator({
                 style={
                   {
                     accentColor: color,
-                    background: `linear-gradient(to right, ${color} 0%, ${color} ${dynMax > 0 ? (w / dynMax) * 100 : 0}%, hsl(var(--muted)) ${dynMax > 0 ? (w / dynMax) * 100 : 0}%, hsl(var(--muted)) 100%)`,
+                    background: `linear-gradient(to right, ${color} 0%, ${color} ${w}%, hsl(var(--muted)) ${w}%, hsl(var(--muted)) 100%)`,
                     height: 6,
                     borderRadius: 999,
                   } as React.CSSProperties
@@ -148,7 +150,7 @@ export function WeightAllocator({
                 data-testid={`weight-slider-${d.key}`}
                 aria-label={`${d.label} 权重`}
                 aria-valuemin={0}
-                aria-valuemax={dynMax}
+                aria-valuemax={100}
                 aria-valuenow={w}
               />
             </div>
