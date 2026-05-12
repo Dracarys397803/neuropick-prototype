@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-05-12 · `ui/consumer-app-redesign` (slider 独立补丁)
+
+### Fixed
+- **拖一个 slider 会让其他 slider 的拇指也动**:上个补丁用「动态 max = 100 - 其他维度之和」防超界,逻辑上对,但拇指位置 = value/max,max 一变别人的拇指也跳,看起来像「拖 A 带动 B/C/D」。
+  现在所有 slider 的 `max` 恒为 100,拇指位置始终与真实百分比一致;越界护栏下沉到 `onChange` 里做 `value = min(输入, 100 - 其他启用维度之和)`,拖到满额就停在边界,其他 slider 纹丝不动。
+
+### Validation (Playwright e2e, 1440×900)
+- 默认 100/100,拖 perf 到 80 → 被 clamp 回 30,其他 4 项 value 和 thumb 位置完全不变。
+- battery 从 20 调到 5 (total 掊到 85) → perf 可从 30 拖到 45 (掊回 100)。
+- 五根 slider 的 thumbPct 都严格等于「本维度百分比 / 100」。
+
+---
+
 ## 2026-05-12 · `ui/consumer-app-redesign` (修复补丁)
 
 ### Fixed
