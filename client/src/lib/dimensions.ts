@@ -87,7 +87,7 @@ export const CATEGORIES: CategoryMeta[] = [
       { name: "创作设计", weights: { performance: 4, battery: 3, portability: 2, display: 5, build: 4, value: 2 } },
       { name: "性价比党", weights: { performance: 3, battery: 3, portability: 3, display: 3, build: 2, value: 5 } },
     ],
-    budget: { min: 3000, max: 25000, defaultMax: 10000 },
+    budget: { min: 3000, max: 25000, defaultMax: 18000 },
   },
   {
     key: "phone",
