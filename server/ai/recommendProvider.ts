@@ -4,11 +4,11 @@
  * 设计原则:
  *   1. **Provider 抽象**:routes.ts 不关心走的是 Perplexity 还是 OpenAI,
  *      只关心 `getAiRecommendations(req)` 是 resolve 出产品列表还是 throw。
- *   2. **本轮只完整实现一个 provider:Perplexity Sonar(in-context web search)**。
- *      Perplexity 适合这个场景 —— 它返回的就是带实时 web search 的推荐,而不是 hallucination。
- *   3. **OpenAI provider 当前是占位实现**,会立刻 throw 一个明确错误,告知 routes.ts fallback。
- *      不是半成品 —— 接口签名稳定,但身体明确说"未实现",等下一轮真要接 OpenAI 时再补。
- *   4. **缺 key 直接 throw `MissingApiKeyError`**,routes.ts 看到这个错就走 mock。
+ *   2. **两个 provider 都已实现**:
+ *      - Perplexity Sonar:in-context web search,返回带实时检索的推荐。
+ *      - OpenAI Chat Completions + JSON mode:靠 模型内置知识 + structured JSON 输出。
+ *      两者主要差别是是否会去 web。routes.ts 不关心 —— 它只需要 RecommendedProduct[]。
+ *   3. **缺 key 直接 throw `MissingApiKeyError`**,routes.ts 看到这个错就走 mock。
  *
  * 环境变量:
  *   - AI_PROVIDER:  "perplexity" | "openai"(缺省 "perplexity")
@@ -140,19 +140,66 @@ class PerplexityProvider implements AiRecommendProvider {
 }
 
 // ============================================================
-// OpenAI provider —— 占位实现(明确未实现,不是半成品)
+// OpenAI provider —— 完整实现(Chat Completions + JSON mode)
 // ============================================================
 
-class OpenAiPlaceholderProvider implements AiRecommendProvider {
+const OPENAI_DEFAULT_MODEL = "gpt-4o-mini";
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+
+class OpenAiProvider implements AiRecommendProvider {
   readonly name = "openai";
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async recommend(_req: RecommendRequest, _signal: AbortSignal): Promise<RecommendedProduct[]> {
-    // 本轮不接 OpenAI,但保留稳定的 provider 接口形状以便后续替换。
-    // routes.ts 抓到这个错会自动走 mock fallback,所以即使配错 provider 也不会崩。
-    throw new AiProviderError(
-      "OpenAI provider not implemented in this POC; falling back to mock",
-      this.name
-    );
+  constructor(private readonly apiKey: string, private readonly model: string) {}
+
+  async recommend(req: RecommendRequest, signal: AbortSignal): Promise<RecommendedProduct[]> {
+    const prompt = buildPrompt(req);
+
+    const resp = await fetch(OPENAI_URL, {
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "你是一名严谨的数码硬件买手。你必须只用合法 JSON 回答,不要写任何 markdown 围栏或解释。返回的根对象必须含顶层 products 数组,长度恰好为 10。",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.2,
+        // OpenAI Chat Completions JSON mode。要求 prompt 里出现 "JSON" 字样 —— 我们 buildPrompt 里已经反复提 JSON。
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new AiProviderError(
+        `OpenAI HTTP ${resp.status}: ${body.slice(0, 200)}`,
+        this.name
+      );
+    }
+
+    const data = (await resp.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new AiProviderError("OpenAI response missing message.content", this.name);
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new AiProviderError("OpenAI returned non-JSON content", this.name);
+    }
+
+    return normalizeAiProducts(parsed);
   }
 }
 
@@ -195,7 +242,7 @@ function buildPrompt(req: RecommendRequest): string {
 function pickProvider(name: string, apiKey: string, model: string | undefined): AiRecommendProvider {
   switch (name) {
     case "openai":
-      return new OpenAiPlaceholderProvider();
+      return new OpenAiProvider(apiKey, model || OPENAI_DEFAULT_MODEL);
     case "perplexity":
     default:
       return new PerplexityProvider(apiKey, model || PERPLEXITY_DEFAULT_MODEL);

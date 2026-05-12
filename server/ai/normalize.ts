@@ -115,9 +115,15 @@ function normalizeOne(input: RawAiProduct, index: number): RecommendedProduct | 
   return parsed.success ? parsed.data : null;
 }
 
+/** 调用方要求的最少产品数;达不到则视为 provider 失败 → 走 mock fallback。 */
+export const MIN_PRODUCTS_REQUIRED = 10;
+
 /**
  * 主入口:把 AI 任意结构变成干净的 `RecommendedProduct[]`。
- * 抛错的情况:无法解析出任何一项有效产品。
+ * 抛错的情况:
+ *   - 抽不出产品数组
+ *   - 抽出来但一项都不能被 normalize
+ *   - normalize 后存活 < MIN_PRODUCTS_REQUIRED (业务要求:缺材不可接受)
  */
 export function normalizeAiProducts(raw: unknown): RecommendedProduct[] {
   const rawArr = extractProductsArray(raw);
@@ -135,6 +141,11 @@ export function normalizeAiProducts(raw: unknown): RecommendedProduct[] {
 
   if (out.length === 0) {
     throw new Error("AI response had products but none survived normalization");
+  }
+  if (out.length < MIN_PRODUCTS_REQUIRED) {
+    throw new Error(
+      `AI returned only ${out.length} valid products; need at least ${MIN_PRODUCTS_REQUIRED}`
+    );
   }
   return out;
 }
