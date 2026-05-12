@@ -22,7 +22,7 @@ Neuropick 是一个面向普通消费者的 AI 3C 硬件选购助手。当前版
   - **mock 笔记本库**:11 款涵盖 Apple / Dell / Lenovo / ASUS / HP / Acer / Huawei / Redmi / Framework,默认预算 ¥18,000 可凑齐 Top 3 + 4-10 名 共 10 行
 - **尚未完成**:
   - 真实产品数据库(目前为 mock)
-  - 真实 AI 推荐接口
+  - AI 推荐接口 —— `feature/ai-search-poc` 分支已交付 POC,详见下文[AI 搜索 POC](#ai-搜索-poc-实验性仅在-featureai-search-poc-分支)
   - 价格实时更新 / 购买链接抓取
   - 手机 / 耳机 / 平板 / 手表 / 游戏主机 等品类流程
   - 对比 / 收藏 / 评测库 / 排行榜 / 社区 / 个人中心
@@ -61,24 +61,93 @@ npm run start      # 以生产模式启动 Express,serve dist/public
 
 ## AI 搜索 POC (实验性,仅在 feature/ai-search-poc 分支)
 
-该分支新增 `POST /api/recommend` 接口,可选调用 Perplexity Sonar 返回真实推荐;拿不到 key / 超时 / 返回不合法 → 自动 fallback 到 mock,接口总返 200,UI 不会白屏。
+本分支新增 `POST /api/recommend` 接口,可调用真实 LLM provider 生成推荐。
+**拿不到 key / 超时 / 返回不合法 / 产品不足 10 件 → 自动 fallback 到 mock**,接口永返 200,UI 不会白屏。
+
+### Provider 支持
+
+两个 provider 都是完整实现,什么都不填默认 `perplexity`:
+
+| Provider     | 接口                             | 默认模型         | 实现点                                |
+| ------------ | -------------------------------- | ---------------- | --------------------------------------- |
+| `perplexity` | `/chat/completions` + json_schema | `sonar`          | 带实时 web 检索,适合需要当前价格的场景 |
+| `openai`     | `/chat/completions` + JSON mode  | `gpt-4o-mini`    | 靠模型内置知识 + structured JSON     |
+
+### 启用方式
 
 ```bash
 cp .env.example .env
-# 编辑 .env,填入 AI_API_KEY=...
+# 编辑 .env,填入三个变量:
+#   AI_PROVIDER=perplexity   # 或 openai
+#   AI_API_KEY=...           # 对应 provider 的 key
+#   AI_SEARCH_TIMEOUT_MS=10000
 npm run dev
 ```
 
-- 默认 provider = `perplexity` (完整实现)。`openai` 是占位,会直接抛错走 fallback。
-- 不填 key 也能 `npm run dev` 和 `npm run build`,结果页会显示「当前为演示数据」 badge。
+也可以在命令行传:
+
+```bash
+AI_PROVIDER=openai AI_API_KEY=sk-... npm run dev
+```
+
+### 环境变量完整表
+
+| 变量                      | 默认         | 说明                                                       |
+| ------------------------- | ------------ | ---------------------------------------------------------- |
+| `AI_PROVIDER`             | `perplexity` | `perplexity` \| `openai`                                   |
+| `AI_API_KEY`              | 空           | 留空 → 服务端永远走 mock,接口仍可用                       |
+| `AI_MODEL`                | provider 默认 | 覆盖默认模型名                                            |
+| `AI_SEARCH_TIMEOUT_MS`    | `10000`      | 一次 AI 调用的超时,clamp 到 [1000, 30000]                  |
+
+### Fallback 规则
+
+以下任一情况会返 200 + `source="mock"` + mock 产品列表:
+
+- 没填 `AI_API_KEY`
+- AI 调用 HTTP 非 2xx
+- 返回内容不是合法 JSON
+- 超过 `AI_SEARCH_TIMEOUT_MS` 超时
+- normalize 后产品不足 10 件
+
+只有 `body` 不合法才返 400(这是真正的 client error)。
+
+### 请求 / 响应 示例
+
+```bash
+curl -X POST http://localhost:5000/api/recommend \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "category": "laptop",
+    "budget": 18000,
+    "useCases": ["work"],
+    "weights": {"performance":40,"battery":20,"portability":20,"display":10,"price":10}
+  }'
+```
+
+返回体形状 (见 `shared/recommend/types.ts`):
+
+```jsonc
+{
+  "source": "ai" | "mock",   // UI 依此决定徽章文案
+  "products": [ /* 10 件 RecommendedProduct */ ],
+  "explanation": "Provided by perplexity",  // 只 AI 路径有
+  "error": "missing_api_key" | "provider_error" | "unknown_error"  // 只 fallback 时有,且粗粒度分类,不含 provider 原始报错
+}
+```
+
+UI 结果页右上会渲染轻量 badge:“AI 搜索结果” / “当前为演示数据”。
+
+### 安全要点
+
+- `.env` 已被 `.gitignore` 排除。只提交 `.env.example`。
+- API key 只在 server 端读取 (`process.env.AI_API_KEY`),前端 bundle 里不含 key。
+- AI provider 原始报错只进 server 日志;HTTP response 只返回粗粒度 `error` 分类。
 - 本功能不影响稳定演示分支 `ui/consumer-app-redesign`。
 
 ## Preview
 
 - **Local preview**: `npm run dev` → [http://localhost:5000](http://localhost:5000)
-- **Online preview**: Pending
-
-线上预览部署方案见下文 [Deployment](#deployment)。
+- **Online preview**: 见下文 [Deployment](#deployment) 部分。静态预览只能看 UI(会走 client 本地 mock fallback);如需验证 AI 路径请本地 `npm run dev` + 填 `.env`。
 
 ## User Flow
 
@@ -106,37 +175,41 @@ npm run dev
 techpick/
 ├── client/
 │   └── src/
-│       ├── pages/                 # Home (dashboard) / Configure (legacy) / Result
+│       ├── pages/                 # Home (dashboard) / Result
 │       ├── components/
-│       │   ├── dashboard/         # 新首页专用:
-│       │   │                       #   TopBar / SideNav / StepHeader
-│       │   │                       #   ProductTypeGrid / BudgetRange / UseCaseChips
-│       │   │                       #   WeightAllocator / RecommendationPreview / CommunityCard
-│       │   ├── home/              # 上一版 hero 余留组件(未使用)
-│       │   ├── configure/         # PresetPicker / DimensionSliders / BudgetSlider / Summary
-│       │   ├── result/            # ProductCard / CompareTable / SummaryCard / ScoreRing 等
-│       │   ├── AppShell.tsx       # legacy 外壳(仅 Configure/Result 用)
-│       │   ├── CategoryCard.tsx   # legacy(未使用)
+│       │   ├── dashboard/         # 首页: TopBar / SideNav / StepHeader
+│       │   │                       #       ProductTypeGrid / BudgetRange / UseCaseChips
+│       │   │                       #       WeightAllocator / RecommendationPreview / CommunityCard
+│       │   ├── result/            # ProductCard / CompareTable / SummaryCard / ScoreRing
 │       │   └── ui/                # shadcn/radix 原子组件
-│       ├── data/                  # 只服务 UI 的静态数据
-│       │   ├── navigation.ts      # 左侧栏 + 顶部导航项
-│       │   ├── productTypes.ts    # 6 个产品类型 chip
-│       │   ├── useCases.ts        # 主要用途 chips
-│       │   ├── communityFeed.ts   # mock 社区动态
-│       │   └── scoringExplain.ts  # 维度说明文案
+│       ├── data/                  # 静态展示用数据 (navigation / productTypes / useCases ...)
 │       ├── lib/
-│       │   ├── dimensions.ts      # 维度 / 品类 / 预设 / 预算 单一事实来源
-│       │   ├── mockProducts.ts    # mock 产品库(纯数据)
-│       │   ├── scoring.ts         # 评分纯函数(支持维度禁用)
+│       │   ├── dimensions.ts      # re-export 自 shared/recommend/dimensions
+│       │   ├── mockProducts.ts    # re-export 自 shared/recommend/products
+│       │   ├── scoring.ts         # re-export 自 shared/recommend/scoring
+│       │   ├── recommendApi.ts    # POST /api/recommend 客户端 + 本地 mock 兜底 (POC 新增)
 │       │   ├── icons.ts           # 图标名 → lucide 组件映射
 │       │   └── router.tsx         # 极简 view 切换路由
-│       ├── hooks/use-toast.ts     # “敬请期待” toast
 │       ├── App.tsx
 │       ├── main.tsx
 │       └── index.css
-├── server/                         # Express + Vite dev middleware
-├── shared/                         # 跨端共享 schema
-├── script/build.ts                 # 同时打包 client 与 server
+├── server/
+│   ├── index.ts                   # Express 启动 + dotenv/config
+│   ├── routes.ts                  # POST /api/recommend (POC 新增)
+│   ├── vite.ts                    # dev 模式 Vite middleware
+│   ├── static.ts                  # 生产模式 静态 serve
+│   ├── ai/                        # POC 新增
+│   │   ├── recommendProvider.ts   # Perplexity + OpenAI provider 抽象
+│   │   └── normalize.ts           # zod 校验 + 最少 10 件产品门槛
+│   └── recommend/                 # POC 新增
+│       └── mockRecommendations.ts # 复用 shared scoring 返 mock 10 件
+├── shared/
+│   └── recommend/                 # POC 新增: server 和 client 都可读、不依赖 UI
+│       ├── dimensions.ts          # 维度 / 品类单一事实来源
+│       ├── products.ts            # mock 产品库
+│       ├── scoring.ts             # 评分纯函数
+│       └── types.ts               # zod schema + RecommendRequest / RecommendedProduct / RecommendResponse
+├── script/build.ts                # 同时打包 client 与 server
 ├── README.md
 ├── CHANGELOG.md
 └── package.json
@@ -182,7 +255,7 @@ PORT=8080 npm run start
 - **Phase 1** ✅ 消费级前端原型
 - **Phase 2** ✅ Dashboard 任务型选购助手骨架(当前仓库状态)
 - **Phase 3** 笔记本深化:mock 产品库扩充、评测内容结构、对比页面
-- **Phase 4** AI 推荐解释(LLM 生成「为什么推这台」)
+- **Phase 4** AI 推荐解释(LLM 生成「为什么推这台」) —— `feature/ai-search-poc` 分支已交 POC
 - **Phase 5** 商品链接、价格更新、库存校验
 - **Phase 6** 对比 / 收藏 / 评测库 等「敬请期待」模块逐一开启
 - **Phase 7** 扩展手机 / 耳机 / 平板 / 手表 / 游戏主机等品类
@@ -191,11 +264,13 @@ PORT=8080 npm run start
 
 这是个原型,以快为先。改动建议:
 
-- 维度 / 品类 → 改 `client/src/lib/dimensions.ts`
-- mock 产品 → 改 `client/src/lib/mockProducts.ts`
-- 评分公式 → 改 `client/src/lib/scoring.ts`
-- 首页 UI 模块 → 改 `client/src/components/home/`
+- 维度 / 品类 → 改 `shared/recommend/dimensions.ts` (client/server 均复用)
+- mock 产品 → 改 `shared/recommend/products.ts`
+- 评分公式 → 改 `shared/recommend/scoring.ts`
+- API 请求 / 返回类型 → 改 `shared/recommend/types.ts` (zod schema)
+- 首页 UI 模块 → 改 `client/src/components/dashboard/`
 - 用途 chips / 文案 → 改 `client/src/data/`
+- AI provider → 改 `server/ai/recommendProvider.ts`
 
 请保持页面组件(`pages/*.tsx`)尽量瘦,业务逻辑放 `lib/`,UI 块放 `components/`。
 

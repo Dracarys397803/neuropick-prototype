@@ -10,6 +10,7 @@ import { getMockRecommendations } from "./recommend/mockRecommendations";
 import {
   getAiRecommendations,
   MissingApiKeyError,
+  AiProviderError,
 } from "./ai/recommendProvider";
 
 export async function registerRoutes(
@@ -58,20 +59,24 @@ export async function registerRoutes(
       };
       return res.status(200).json(payload);
     } catch (err: unknown) {
-      const message =
-        err instanceof MissingApiKeyError
-          ? "AI not configured; using mock"
-          : err instanceof Error
-            ? err.message
-            : String(err);
+      // 完整 message 只走 server 日志,避免 response body 里泄露 provider 报错详情。
+      const fullMessage =
+        err instanceof Error ? err.message : String(err);
+      console.warn("[recommend] AI fallback:", fullMessage);
 
-      // 只在 dev 控制台打 provider error,不会泄漏给前端 UI
-      console.warn("[recommend] AI fallback:", message);
+      // 返给前端只是一个粗粒度分类标签——UI 只看 source,不看这个;
+      // 但万一后续调试要看 Network 面板,也只会看到分类,不会漏 provider 原始报错。
+      const errorTag =
+        err instanceof MissingApiKeyError
+          ? "missing_api_key"
+          : err instanceof AiProviderError
+            ? "provider_error"
+            : "unknown_error";
 
       const payload: RecommendResponse = {
         source: "mock",
         products: mockProducts,
-        error: message,
+        error: errorTag,
       };
       return res.status(200).json(payload);
     }

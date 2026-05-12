@@ -18,6 +18,12 @@ import type {
 
 const REQUEST_TIMEOUT_MS = 15000;
 
+// 与 queryClient.ts 同款占位符:
+//   - 本地 dev: API_BASE = "",fetch("/api/recommend")
+//   - deploy 后: deploy_website 把 "__PORT_5000__" 替换成代理路径,
+//     fetch 走到 Express 后端
+const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+
 export async function fetchRecommendations(
   req: RecommendRequest
 ): Promise<RecommendResponse> {
@@ -25,7 +31,7 @@ export async function fetchRecommendations(
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const res = await fetch("/api/recommend", {
+    const res = await fetch(`${API_BASE}/api/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req),
