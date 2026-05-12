@@ -24,29 +24,22 @@ export type Dimension = {
 
 export type CategoryKey = "laptop" | "phone" | "headphone";
 
-export type CategoryStatus = "available" | "coming-soon";
-
+/**
+ * 品类元数据 —— 字段保持最小集,只放当前 UI / 评分实际会读取的内容。
+ *
+ * 历史上曾有 `tagline / navIcon / status / presets`,均已移除:
+ *   - 「是否开放」改由 `data/productTypes.ts` 上的 `available` 字段控制(UI 关心)
+ *   - 「品类卡 tagline」改用各组件就近写,跟随视觉调整
+ *   - 「preset 一键画像」目前没有入口,等真正需要时再加回来
+ */
 export type CategoryMeta = {
   key: CategoryKey;
   /** 品类显示名 */
   label: string;
-  /** Hero 区下方的一句话 */
-  tagline: string;
-  /** Home 页用的导航图标 */
-  navIcon: string;
-  /** 是否已开放配置流程 */
-  status: CategoryStatus;
   /** 该品类下的所有评分维度 */
   dimensions: Dimension[];
-  /** 预设画像，用户一键应用 */
-  presets: Preset[];
   /** 预算 slider 的范围 */
   budget: BudgetConfig;
-};
-
-export type Preset = {
-  name: string;
-  weights: Record<DimensionKey, number>;
 };
 
 export type BudgetConfig = {
@@ -77,46 +70,19 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     key: "laptop",
     label: "笔记本电脑",
-    tagline: "办公、创作、游戏，按你的预算和用途挑一台合适的。",
-    navIcon: "Laptop",
-    status: "available",
     dimensions: [D.performance, D.battery, D.display, D.portability, D.value],
-    presets: [
-      { name: "性能优先", weights: { performance: 5, battery: 2, portability: 1, display: 3, value: 3 } },
-      { name: "便携优先", weights: { performance: 2, battery: 4, portability: 5, display: 3, value: 3 } },
-      { name: "创作设计", weights: { performance: 4, battery: 3, portability: 2, display: 5, build: 4, value: 2 } },
-      { name: "性价比党", weights: { performance: 3, battery: 3, portability: 3, display: 3, build: 2, value: 5 } },
-    ],
     budget: { min: 3000, max: 25000, defaultMax: 18000 },
   },
   {
     key: "phone",
     label: "智能手机",
-    tagline: "影像、性能、续航、手感，按你的取舍排序。",
-    navIcon: "Smartphone",
-    status: "coming-soon",
     dimensions: [D.performance, D.camera, D.battery, D.display, D.handfeel, D.value],
-    presets: [
-      { name: "性能游戏", weights: { performance: 5, camera: 2, battery: 4, display: 4, handfeel: 3, value: 3 } },
-      { name: "拍照旗舰", weights: { performance: 3, camera: 5, battery: 3, display: 4, handfeel: 3, value: 2 } },
-      { name: "续航党",   weights: { performance: 3, camera: 2, battery: 5, display: 3, handfeel: 3, value: 4 } },
-      { name: "性价比",   weights: { performance: 3, camera: 3, battery: 3, display: 3, handfeel: 3, value: 5 } },
-    ],
     budget: { min: 1500, max: 12000, defaultMax: 6000 },
   },
   {
     key: "headphone",
     label: "无线耳机",
-    tagline: "降噪、音质、佩戴、生态，按使用场景挑选。",
-    navIcon: "Headphones",
-    status: "coming-soon",
     dimensions: [D.anc, D.sound, D.comfort, D.battery, D.ecosystem, D.value],
-    presets: [
-      { name: "通勤降噪", weights: { anc: 5, sound: 3, comfort: 4, battery: 3, ecosystem: 2, value: 3 } },
-      { name: "听歌为主", weights: { anc: 2, sound: 5, comfort: 3, battery: 3, ecosystem: 2, value: 3 } },
-      { name: "生态体验", weights: { anc: 3, sound: 3, comfort: 3, battery: 3, ecosystem: 5, value: 3 } },
-      { name: "百元尝鲜", weights: { anc: 3, sound: 3, comfort: 3, battery: 3, ecosystem: 2, value: 5 } },
-    ],
     budget: { min: 200, max: 3500, defaultMax: 1500 },
   },
 ];
@@ -127,9 +93,20 @@ export function getCategory(key: string): CategoryMeta {
   return CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
 }
 
-/** 把维度数组转为 0 分基准的权重对象，便于 useState 初始化 */
-export function emptyWeights(dims: Dimension[]): Record<string, number> {
-  return Object.fromEntries(dims.map((d) => [d.key, 3]));
+/**
+ * 把启用维度的权重打成完整 Record(关闭维度补 0)。
+ * Home / RecommendationPreview / Result 三处都要做同样的事,统一抽到这里,
+ * 顺便保证「未来给某个新维度加默认值」只需要改一个地方。
+ */
+export function buildDimWeights(
+  dimensions: Dimension[],
+  weights: Record<string, number>,
+  disabled: ReadonlySet<string> = new Set()
+): Record<DimensionKey, number> {
+  return dimensions.reduce<Record<DimensionKey, number>>((acc, d) => {
+    acc[d.key] = disabled.has(d.key) ? 0 : (weights[d.key] ?? 0);
+    return acc;
+  }, {} as Record<DimensionKey, number>);
 }
 
 export const formatPrice = (p: number) => "¥" + p.toLocaleString("zh-CN");

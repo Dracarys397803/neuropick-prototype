@@ -18,7 +18,6 @@ type Props = {
   catKey: string;
   weights: Record<string, number>;
   budget: number;
-  presetName?: string;
   disabledDims?: string[];
 };
 
@@ -29,7 +28,7 @@ const LOADING_MS = 1100;
  * 「修改条件」和「重新生成」全部回到新版首页 home。
  * 旧的 configure 路由已彻底删除,这里不存在任何回到旧页的路径。
  */
-export default function Result({ catKey, weights, budget, presetName, disabledDims }: Props) {
+export default function Result({ catKey, weights, budget, disabledDims }: Props) {
   const { go } = useRouter();
   const category = getCategory(catKey);
 
@@ -73,7 +72,7 @@ export default function Result({ catKey, weights, budget, presetName, disabledDi
                     {loading ? "正在生成推荐…" : `为你找到 ${scored.length} 款合适产品`}
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {category.label}{presetName ? ` · ${presetName}` : ""} · 预算 ≤ {formatPrice(budget)} · 按你的权重排序
+                    {category.label} · 预算 ≤ {formatPrice(budget)} · 按你的权重排序
                   </p>
                 </div>
                 <ShareButton />

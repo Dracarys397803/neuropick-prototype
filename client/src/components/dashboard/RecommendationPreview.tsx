@@ -1,5 +1,5 @@
 import { Sparkles, ChevronRight } from "lucide-react";
-import { formatPrice, getCategory, type DimensionKey } from "@/lib/dimensions";
+import { formatPrice, getCategory, buildDimWeights } from "@/lib/dimensions";
 import { scoreProducts } from "@/lib/scoring";
 import { useToast } from "@/hooks/use-toast";
 
@@ -33,10 +33,9 @@ export function RecommendationPreview({ catKey, budget, weights, disabledDims }:
 
   const category = getCategory(catKey);
   const disabledSet = new Set(disabledDims);
-  const dimWeights = category.dimensions.reduce<Record<DimensionKey, number>>((acc, d) => {
-    acc[d.key] = weights[d.key] ?? 0;
-    return acc;
-  }, {} as Record<DimensionKey, number>);
+  // 注意:这里不用 disabledSet 清零。父组件 Home 在 weights 里已经保留全量值,
+  // 关闭维度在评分阶段由 scoreProducts(disabledSet) 负责跳过;预览卡不需要提前置零。
+  const dimWeights = buildDimWeights(category.dimensions, weights);
 
   const top = scoreProducts(category, dimWeights, budget, disabledSet).slice(0, 3);
 

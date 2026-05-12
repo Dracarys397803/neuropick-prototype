@@ -6,7 +6,7 @@
  */
 import {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
-  Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
+  Camera, Headphones, Music, Network, Smartphone, Laptop,
   Tablet, Watch, Gamepad2,
   Home, Compass, Scale, Heart, FileText, MessageCircle, Trophy, UserCircle,
   type LucideIcon,
@@ -14,7 +14,7 @@ import {
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   Cpu, BatteryCharging, Feather, Monitor, Hammer, Coins,
-  Camera, Headphones, Music, Network, Smartphone, Laptop, ShieldCheck,
+  Camera, Headphones, Music, Network, Smartphone, Laptop,
   Tablet, Watch, Gamepad2,
   Home, Compass, Scale, Heart, FileText, MessageCircle, Trophy, UserCircle,
 };

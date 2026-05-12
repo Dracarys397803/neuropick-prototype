@@ -1,5 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+/**
+ * 全局 react-query 客户端。
+ *
+ * 现状:本项目走 mock 数据打分(见 lib/scoring + data/products),还没调后端 API。
+ * `apiRequest` / `getQueryFn` 临时保留,作为将来接真实后端推荐接口时的脚手架,
+ * 其中 `queryClient` 本身由 App.tsx 的 QueryClientProvider 使用。
+ *
+ * TODO(api): 一旦 /api/recommend 上线,把 apiRequest / getQueryFn 接入 useQuery,
+ * 并把 Home/Result 里的同步 mock 打分改成 useQuery 加载。
+ */
 const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
 
 async function throwIfResNotOk(res: Response) {

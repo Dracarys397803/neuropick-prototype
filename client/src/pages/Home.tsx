@@ -9,7 +9,7 @@ import { UseCaseChips } from "@/components/dashboard/UseCaseChips";
 import { WeightAllocator, useWeightTotal } from "@/components/dashboard/WeightAllocator";
 import { RecommendationPreview } from "@/components/dashboard/RecommendationPreview";
 import { CommunityCard } from "@/components/dashboard/CommunityCard";
-import { getCategory, type DimensionKey } from "@/lib/dimensions";
+import { getCategory, buildDimWeights } from "@/lib/dimensions";
 import { LAPTOP_USE_CASES } from "@/data/useCases";
 import { useRouter } from "@/lib/router";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +35,8 @@ export default function Home() {
   const category = getCategory(catKey);
 
   const [budget, setBudget] = useState<number>(category.budget.defaultMax);
+  // TODO(use-cases): useCases 当前只是 UI 装饰(影响 chips 高亮),没有进入打分。
+  // 等真的把「主要用途」接入打分时,要么映射成 weights 微调,要么作为独立维度。
   const [useCases, setUseCases] = useState<Set<string>>(new Set(["office"]));
 
   const [weights, setWeights] = useState<Record<string, number>>(
@@ -89,10 +91,10 @@ export default function Home() {
       return;
     }
     // 把所有启用维度的权重透传到 result;关闭维度通过 disabledDims 告知。
-    const dimWeights = category.dimensions.reduce<Record<DimensionKey, number>>((acc, d) => {
-      acc[d.key] = enabled[d.key] === false ? 0 : (weights[d.key] ?? 0);
-      return acc;
-    }, {} as Record<DimensionKey, number>);
+    const disabledSet = new Set(
+      category.dimensions.filter((d) => enabled[d.key] === false).map((d) => d.key)
+    );
+    const dimWeights = buildDimWeights(category.dimensions, weights, disabledSet);
 
     go({
       name: "result",

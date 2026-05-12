@@ -4,6 +4,41 @@
 
 ---
 
+## 2026-05-12 · `ui/consumer-app-redesign` (代码清理 / hygiene)
+
+本轮只做代码整理,**UI 视觉与交互未变**。
+
+### Removed
+- `client/src/pages/not-found.tsx`:Replit 模板残留页面,全库零引用,删除。
+- `client/src/lib/icons.ts` 中的 `ShieldCheck`:不在任何维度/品类配置中消费,从 import 与 ICON_MAP 中移除。
+- `lib/dimensions.ts`:删除未被引用的 `CategoryStatus` / `Preset` 类型、`CategoryMeta` 上的 `tagline` / `navIcon` / `status` / `presets` 字段以及 `emptyWeights()` 辅助函数(全库零引用)。三个品类的 `presets` 数据同步删除。
+- `lib/router.tsx` / `App.tsx` / `pages/Result.tsx`:移除 `presetName` 链路(`View` 类型字段 / `App` 传递 / `Result` props 与子标题拼接)。Home 从不会传 `presetName`,这条链路总是 `undefined`。
+- `components/dashboard/WeightAllocator.tsx`:删除未被引用的 `export { RotateCcw }` 重出口。
+
+### Changed
+- **抽出 `buildDimWeights(dimensions, weights, disabled?)` 辅助函数**(`lib/dimensions.ts`):Home 生成推荐时、RecommendationPreview 预览时,之前各自写了一份 `dimensions.reduce<...>` 拼装逻辑,现在统一走 `buildDimWeights`。未来加默认值 / 兑底值 / 清零逻辑只需改一处。
+- `WeightAllocator` 内部 `enabledTotal` 现在复用 `useWeightTotal`,避免两份同步总和逻辑。
+- `components/result/LaptopThumbnail.tsx`:注释「让 7 款笔记本」更正为「让 11 款笔记本」,与实际 mock 数量对齐。
+
+### Added (TODO 标注)
+- `pages/Home.tsx`:给 `useCases` 加 `TODO(use-cases)`,说明当前只是 UI 装饰,未进入打分;未来要么映射成 weights 微调、要么作为独立维度。
+- `lib/queryClient.ts`:加文件顶部文档注释 + `TODO(api)`,明确 `apiRequest` / `getQueryFn` 作为未来接后端的脚手架保留原因。
+
+### Validation
+- `npm run check`(tsc):✅ 0 错误。
+- `npm run build`:✅ client (Vite) + server (esbuild) 两段皆过,bundle 体积与上轮近乎一致。
+- Playwright e2e（1440×900）:
+  - 首页 weight-total = 100,preview-list 渲染正常,点击「生成」后进入结果页。
+  - 结果页 Top 3 = 3 张大卡(`card-top-*`),4-10 名 = 7 行(`row-ranked-*`),`ranked-list` 可见。
+  - 「关闭 value 维度 + 平均分配 + 生成」链路仍能进入结果页,全程无 pageerror / console error。
+- 本轮项目未配置 `lint` / `test` / Playwright 脚本,同步跳过这三项脚本。
+
+### Not touched (思考了但本轮不动)
+- `client/src/components/ui/*` shadcn 整套中诸多单件零引用,但作为 UI Kit 保留;严格商业逻辑不调用它们,未来要加新页面会需要。
+- `server/index.ts` / `server/vite.ts` 里 Express 标准签名的 `any`:保留。
+
+---
+
 ## 2026-05-12 · `ui/consumer-app-redesign` (推荐结果页 UI 升级)
 
 ### Added

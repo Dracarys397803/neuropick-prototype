@@ -14,7 +14,6 @@ export type View =
       catKey: string;
       weights: Record<string, number>;
       budget: number;
-      presetName?: string;
       /** 被用户关闭的维度 key。不传 = 全部启用。 */
       disabledDims?: string[];
     };

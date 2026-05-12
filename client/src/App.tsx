@@ -14,7 +14,6 @@ function ViewSwitch() {
         catKey={view.catKey}
         weights={view.weights}
         budget={view.budget}
-        presetName={view.presetName}
         disabledDims={view.disabledDims}
       />
     );

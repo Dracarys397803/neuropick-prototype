@@ -1,4 +1,4 @@
-import { GripVertical, Plus, RotateCcw, Wand2 } from "lucide-react";
+import { GripVertical, Plus, Wand2 } from "lucide-react";
 import type { Dimension } from "@/lib/dimensions";
 import { getIcon } from "@/lib/icons";
 import { useToast } from "@/hooks/use-toast";
@@ -39,10 +39,8 @@ export function WeightAllocator({
 }: Props) {
   const { toast } = useToast();
 
-  const enabledTotal = dimensions.reduce(
-    (sum, d) => sum + (enabled[d.key] !== false ? (weights[d.key] ?? 0) : 0),
-    0
-  );
+  // 复用下面的 useWeightTotal,避免两份同步逻辑。
+  const enabledTotal = useWeightTotal(dimensions, weights, enabled);
 
   /** 给指定维度计算允许的最大值:100 - 其他启用维度的当前权重之和 */
   function maxFor(key: string): number {
@@ -223,5 +221,3 @@ export function useWeightTotal(
   );
 }
 
-/** 工具:在子组件外面也用得到的 reset 辅助。 */
-export { RotateCcw };
